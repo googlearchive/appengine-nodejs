@@ -4,7 +4,7 @@ A set of node.js libraries for interacting with App Engine services from within 
 
 ## Usage
 
-Declare this library as a dependency in `package.js`:
+Declare this library as a dependency in `package.json`:
 
 ~~~~
   "dependencies": {
@@ -18,12 +18,12 @@ Add a `Dockerfile` to the application with the following contents:
   FROM google/nodejs-runtime
 ~~~~
 
-Before calling functions in this library, http handlers need to make sure to call the `appengine.middleware.base` function with three arguments: the node.js request, the node.js response and a callback.
+Then, before calling functions in this library, http handlers need to make sure to call the `appengine.middleware.base` function with three arguments: the node.js request, the node.js response and a callback.
 
 Frameworks such as `express.js` do this automatically if you register that function as a middleware. Here's an example:
 
 ~~~~
-  var appengine = require('./appengine');
+  var appengine = require('appengine');
   var express = require('express');
 
   var app = express();
