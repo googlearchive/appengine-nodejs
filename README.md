@@ -1,8 +1,10 @@
 # appengine-nodejs
 
-A set of node.js libraries for interacting with App Engine services from within Google App Engine Managed VMs.
+An experimental set of node.js libraries for interacting with App Engine specific services from within [Google App Engine Managed VMs](https://developers.google.com/appengine/docs/managed-vms/).
 
 ## Usage
+
+This library will only work inside App Engine Managed VMs, or with the Managed VM SDK.
 
 Declare this library as a dependency in `package.json`:
 
