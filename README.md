@@ -10,7 +10,7 @@ Declare this library as a dependency in `package.json`:
 
 ~~~~
   "dependencies": {
-    "appengine": "git://github.com:GoogleCloudPlatform/appengine-nodejs.git",
+    "appengine": "git+http://github.com:GoogleCloudPlatform/appengine-nodejs.git",
   }
 ~~~~
 
@@ -18,6 +18,7 @@ Add a `Dockerfile` to the application with the following contents:
 
 ~~~~
   FROM google/nodejs-runtime
+  ADD . /home/vmagent/nodejs-application/
 ~~~~
 
 Then, before calling functions in this library, http handlers need to make sure to call the `appengine.middleware.base` function with three arguments: the node.js request, the node.js response and a callback.
