@@ -2,6 +2,8 @@
 
 An experimental set of node.js libraries for interacting with App Engine specific services from within [Google App Engine Managed VMs](https://developers.google.com/appengine/docs/managed-vms/) using Custom Runtimes.
 
+To get started, clone the [quickstart][3] project and follow the instructions there.
+
 ## Usage
 
 This library will only work inside App Engine Managed VMs, or with the Managed VM SDK.
@@ -128,3 +130,4 @@ This function must be called by all http handlers that intend to make any App En
 
 [1]: https://www.npmjs.org/package/googleapis
 [2]: https://github.com/GoogleCloudPlatform/gcloud-node
+[3]: https://github.com/GoogleCloudPlatform/appengine-nodejs-quickstart
