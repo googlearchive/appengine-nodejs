@@ -101,13 +101,14 @@ Returns the hostname (a string) to use to talk to the given module/version/insta
 ### Auth
 
 ~~~~
-  appengine.auth.withAccessToken(request, function(err, token) { ... });
+  appengine.auth.getServiceAccountToken(request, function(err, token) { ... });
 ~~~~
 
-Returns the OAuth token provided by the VM metadata service. `token` is an object with two properties:
+Returns an OAuth token for the service account for the VM as provided by the metadata server. `token` is an object with three properties:
 
-* `token`: a string, the token itself
-* `tokenType`: a string, the type of token
+* `accessToken`: a string, the access token itself
+* `tokenType`: a string, the type of token returned, e.g. `"Bearer"`
+* `expiresIn`: a number, the time to expiration in seconds
 
 ### Metadata
 
