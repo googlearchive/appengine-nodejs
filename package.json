@@ -12,5 +12,14 @@
     "type": "git",
     "url": "https://github.com/googlecloudplatform/appengine-nodejs.git"
   },
-  "license": "Apache 2"
+  "license": "Apache 2",
+  "devDependencies": {
+    "jshint": "^2.5.2",
+    "mocha": "^1.21.3",
+    "tmp": "^0.0.24"
+  },
+  "scripts": {
+    "lint": "jshint lib/ test/",
+    "test": "mocha --recursive --reporter spec"
+  }
 }
