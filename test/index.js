@@ -270,6 +270,19 @@ describe('appengine', function() {
         var after = new Date().getTime();
         assert.ok(before <= time && time <= after);
       });
+
+      it('returns a result in the correct interval', function(done) {
+        var ae = new appengine.AppEngine();
+        var before = new Date().getTime();
+        setTimeout(function() {
+          var time = ae.getCurrentTime_();
+          setTimeout(function() {
+            var after = new Date().getTime();
+            assert.ok(before <= time && time <= after);
+            done();
+          }, 10);
+        }, 10);
+      });
     });
 
     describe('getProcessEnv_', function() {
