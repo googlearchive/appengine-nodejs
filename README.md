@@ -12,7 +12,7 @@ Declare this library as a dependency in `package.json`:
 
 ~~~~
   "dependencies": {
-    "appengine": "git+http://github.com:GoogleCloudPlatform/appengine-nodejs.git",
+    "appengine": "git://github.com/GoogleCloudPlatform/appengine-nodejs.git",
   }
 ~~~~
 
@@ -46,7 +46,7 @@ An application may use any other Google APIs, such as Google Cloud Storage or Go
 ~~~~
   "dependencies": {
     "googleapis" : "0.7.0"
-    "gcloud" : "git://github.com:GoogleCloudPlatform/gcloud-node.git"
+    "gcloud" : "git://github.com/GoogleCloudPlatform/gcloud-node.git"
   }
 ~~~~
 
