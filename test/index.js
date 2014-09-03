@@ -114,7 +114,7 @@ describe('appengine', function() {
         });
       });
 
-      it('handles application errors', function() {
+      it('handles application errors', function(done) {
         var ae = new appengine.AppEngine();
 
         var response = new apphosting.ext.remote_api.Response();
@@ -126,19 +126,17 @@ describe('appengine', function() {
         ae.sendHttpRequest_ = function(options, body, callback) {
           callback(null, {statusCode: 200, body: responseBody});
         }
-        var called = false
         ae.translateApplicationError_ = function(applicationError) {
           assert.deepEqual(applicationError, error);
-          called = true;
+          done();
         }
 
         var req = {appengine: {apiTicket: 'test123', devappserver: false}};
         var proto = new apphosting.base.VoidProto();
         ae.callApi_('Test', 'test', req, proto, function(err) {});
-        assert.ok(called, 'translateApplicationError_ was not called');
       });
 
-      it('handles rpc errors', function() {
+      it('handles rpc errors', function(done) {
         var ae = new appengine.AppEngine();
 
         var response = new apphosting.ext.remote_api.Response();
@@ -150,16 +148,14 @@ describe('appengine', function() {
         ae.sendHttpRequest_ = function(options, body, callback) {
           callback(null, {statusCode: 200, body: responseBody});
         }
-        var called = false
         ae.translateRpcError_ = function(rpcError) {
           assert.deepEqual(rpcError, error);
-          called = true;
+          done();
         }
 
         var req = {appengine: {apiTicket: 'test123', devappserver: false}};
         var proto = new apphosting.base.VoidProto();
         ae.callApi_('Test', 'test', req, proto, function(err) {});
-        assert.ok(called, 'translateRpcError_ was not called');
       });
 
       it('handles python exceptions', function() {
@@ -344,7 +340,7 @@ describe('appengine', function() {
     });
 
     describe('logOneLine', function() {
-      it('makes an api call to log a line', function() {
+      it('makes an api call to log a line', function(done) {
         var ae = new appengine.AppEngine();
         var time = new Date().getTime();
         ae.getCurrentTime_ = function() {
@@ -366,33 +362,29 @@ describe('appengine', function() {
           callback(null, response);
         };
 
-        var called = false;
         var req = {appengine: {apiTicket: 'test123', devappserver: false}};
         ae.logOneLine(req, 'test', function() {
-          called = true;
+          done();
         });
-        assert.ok(called, 'callback was not invoked');
       });
 
-      it('handles api errors correctly', function() {
+      it('handles api errors correctly', function(done) {
         var ae = new appengine.AppEngine();
         var error = new Error('test');
         ae.callApi_ = function(serviceName, methodName, req, proto, callback) {
           callback(error);
         };
 
-        var called = false;
         var req = {appengine: {apiTicket: 'test123', devappserver: false}};
         ae.logOneLine(req, 'test', function(err) {
-          called = true;
           assert.equal(err, error);
+          done();
         });
-        assert.ok(called, 'callback was not invoked');
       });
     });
 
     describe('memcacheGet_', function() {
-      it('retrieves an existing memcache entry', function() {
+      it('retrieves an existing memcache entry', function(done) {
         var ae = new appengine.AppEngine();
         ae.callApi_ = function(serviceName, methodName, req, proto, callback) {
           assert.strictEqual(serviceName, 'memcache');
@@ -409,17 +401,15 @@ describe('appengine', function() {
           callback(null, response);
         };
 
-        var called = false;
         var req = {appengine: {apiTicket: 'test123', devappserver: false}};
         ae.memcacheGet_(req, 'key', function(err, value) {
-          called = true;
           assert.ifError(err);
           assert.strictEqual(value, 'value');
+          done();
         });
-        assert.ok(called, 'callback was not invoked');
       });
 
-      it('retrieves a non-existing memcache entry', function() {
+      it('retrieves a non-existing memcache entry', function(done) {
         var ae = new appengine.AppEngine();
         ae.callApi_ = function(serviceName, methodName, req, proto, callback) {
           assert.strictEqual(serviceName, 'memcache');
@@ -432,35 +422,31 @@ describe('appengine', function() {
           callback(null, response);
         };
 
-        var called = false;
         var req = {appengine: {apiTicket: 'test123', devappserver: false}};
         ae.memcacheGet_(req, 'key', function(err, value) {
-          called = true;
           assert.ifError(err);
           assert.strictEqual(value, undefined);
+          done();
         });
-        assert.ok(called, 'callback was not invoked');
       });
 
-      it('handles api errors correctly', function() {
+      it('handles api errors correctly', function(done) {
         var ae = new appengine.AppEngine();
         var error = new Error('test');
         ae.callApi_ = function(serviceName, methodName, req, proto, callback) {
           callback(error);
         };
 
-        var called = false;
         var req = {appengine: {apiTicket: 'test123', devappserver: false}};
         ae.memcacheGet_(req, 'key', function(err, value) {
-          called = true;
           assert.equal(err, error);
+          done();
         });
-        assert.ok(called, 'callback was not invoked');
       });
     });
 
     describe('memcacheSet_', function() {
-      it('sets a memcache entry', function() {
+      it('sets a memcache entry', function(done) {
         var ae = new appengine.AppEngine();
         ae.callApi_ = function(serviceName, methodName, req, proto, callback) {
           assert.strictEqual(serviceName, 'memcache');
@@ -475,34 +461,30 @@ describe('appengine', function() {
           callback(null, response);
         };
 
-        var called = false;
         var req = {appengine: {apiTicket: 'test123', devappserver: false}};
         ae.memcacheSet_(req, 'key', 'value', function(err) {
-          called = true;
           assert.ifError(err);
+          done();
         });
-        assert.ok(called, 'callback was not invoked');
       });
 
-      it('handles api errors correctly', function() {
+      it('handles api errors correctly', function(done) {
         var ae = new appengine.AppEngine();
         var error = new Error('test');
         ae.callApi_ = function(serviceName, methodName, req, proto, callback) {
           callback(error);
         };
 
-        var called = false;
         var req = {appengine: {apiTicket: 'test123', devappserver: false}};
         ae.memcacheSet_(req, 'key', 'value', function(err, value) {
-          called = true;
           assert.equal(err, error);
+          done();
         });
-        assert.ok(called, 'callback was not invoked');
       });
     });
 
     describe('taskQueueAdd_', function() {
-      it('adds a task', function() {
+      it('adds a task', function(done) {
         var ae = new appengine.AppEngine();
         ae.callApi_ = function(serviceName, methodName, req, proto, callback) {
           assert.strictEqual(serviceName, 'taskqueue');
@@ -523,7 +505,6 @@ describe('appengine', function() {
           callback(null, response);
         };
 
-        var called = false;
         var options = {
           url: 'url',
           queueName: 'queue',
@@ -535,15 +516,14 @@ describe('appengine', function() {
         };
         var req = {appengine: {apiTicket: 'test123', devappserver: false}};
         ae.taskQueueAdd_(req, options, function(err, taskName) {
-          called = true;
           assert.ifError(err);
           assert.ok(!!taskName);
           assert.strictEqual(typeof(taskName), 'string');
+          done();
         });
-        assert.ok(called, 'callback was not invoked');
       });
 
-      it('defaults several options', function() {
+      it('defaults several options', function(done) {
         var ae = new appengine.AppEngine();
         ae.callApi_ = function(serviceName, methodName, req, proto, callback) {
           assert.strictEqual(serviceName, 'taskqueue');
@@ -560,21 +540,19 @@ describe('appengine', function() {
           callback(null, response);
         };
 
-        var called = false;
         var options = {
           url: 'url',
         };
         var req = {appengine: {apiTicket: 'test123', devappserver: false}};
         ae.taskQueueAdd_(req, options, function(err, taskName) {
-          called = true;
           assert.ifError(err);
           assert.ok(!!taskName);
           assert.strictEqual(typeof(taskName), 'string');
+          done();
         });
-        assert.ok(called, 'callback was not invoked');
       });
 
-      it('handles api errors correctly', function() {
+      it('handles api errors correctly', function(done) {
         var ae = new appengine.AppEngine();
         var error = new Error('test');
         ae.callApi_ = function(serviceName, methodName, req, proto, callback) {
@@ -590,18 +568,16 @@ describe('appengine', function() {
           body: 'test',
           headers: {'foo': 'bar'}
         };
-        var called = false;
         var req = {appengine: {apiTicket: 'test123', devappserver: false}};
         ae.taskQueueAdd_(req, options, function(err, taskName) {
-          called = true;
           assert.equal(err, error);
+          done();
         });
-        assert.ok(called, 'callback was not invoked');
       });
     });
 
     describe('modulesGetHostname_', function() {
-      it('returns a hostname', function() {
+      it('returns a hostname', function(done) {
         var ae = new appengine.AppEngine();
         ae.callApi_ = function(serviceName, methodName, req, proto, callback) {
           assert.strictEqual(serviceName, 'modules');
@@ -616,35 +592,31 @@ describe('appengine', function() {
           callback(null, response);
         };
 
-        var called = false;
         var req = {appengine: {apiTicket: 'test123', devappserver: false}};
         ae.modulesGetHostname_(req, 'module', 'version', 'instance', function(err, hostname) {
-          called = true;
           assert.ifError(err);
           assert.strictEqual(hostname, 'hostname');
+          done();
         });
-        assert.ok(called, 'callback was not invoked');
       });
 
-      it('handles api errors correctly', function() {
+      it('handles api errors correctly', function(done) {
         var ae = new appengine.AppEngine();
         var error = new Error('test');
         ae.callApi_ = function(serviceName, methodName, req, proto, callback) {
           callback(error);
         };
 
-        var called = false;
         var req = {appengine: {apiTicket: 'test123', devappserver: false}};
         ae.modulesGetHostname_(req, 'module', 'version', 'instance', function(err, value) {
-          called = true;
           assert.equal(err, error);
+          done();
         });
-        assert.ok(called, 'callback was not invoked');
       });
     });
 
     describe('systemStartBackgroundRequest_', function() {
-      it('starts a background request', function() {
+      it('starts a background request', function(done) {
         var ae = new appengine.AppEngine();
         ae.callApi_ = function(serviceName, methodName, req, proto, callback) {
           assert.strictEqual(serviceName, 'system');
@@ -656,36 +628,32 @@ describe('appengine', function() {
           callback(null, response);
         };
 
-        var called = false;
         var req = {appengine: {apiTicket: 'test123', devappserver: false}};
         ae.systemStartBackgroundRequest_(req, function(err, requestId) {
-          called = true;
           assert.ifError(err);
           assert.strictEqual(requestId, 'id');
+          done();
         });
-        assert.ok(called, 'callback was not invoked');
       });
 
 
-      it('handles api errors correctly', function() {
+      it('handles api errors correctly', function(done) {
         var ae = new appengine.AppEngine();
         var error = new Error('test');
         ae.callApi_ = function(serviceName, methodName, req, proto, callback) {
           callback(error);
         };
 
-        var called = false;
         var req = {appengine: {apiTicket: 'test123', devappserver: false}};
         ae.systemStartBackgroundRequest_(req, function(err, value) {
-          called = true;
           assert.equal(err, error);
+          done();
         });
-        assert.ok(called, 'callback was not invoked');
       });
     });
 
     describe('authGetServiceAccountToken_', function() {
-      it('returns a valid token', function() {
+      it('returns a valid token', function(done) {
         var ae = new appengine.AppEngine();
         ae.sendHttpRequest_ = function(options, body, callback) {
           assert.strictEqual(options.hostname, 'metadata');
@@ -697,19 +665,17 @@ describe('appengine', function() {
           callback(null, response);
         };
 
-        var called = false;
         var req = {appengine: {apiTicket: 'test123', devappserver: false}};
         ae.authGetServiceAccountToken_(req, function(err, token) {
-          called = true;
           assert.ifError(err);
           assert.strictEqual(token.accessToken, 'test');
           assert.strictEqual(token.tokenType, 'Bearer');
           assert.strictEqual(token.expiresIn, 600);
+          done();
         });
-        assert.ok(called, 'callback was not invoked');
       });
 
-      it('handles metadata server errors correctly', function() {
+      it('handles metadata server errors correctly', function(done) {
         var ae = new appengine.AppEngine();
         ae.sendHttpRequest_ = function(options, body, callback) {
           assert.strictEqual(options.hostname, 'metadata');
@@ -721,37 +687,33 @@ describe('appengine', function() {
           callback(null, response);
         };
 
-        var called = false;
         var req = {appengine: {apiTicket: 'test123', devappserver: false}};
         ae.authGetServiceAccountToken_(req, function(err, token) {
-          called = true;
           assert.ok(!!err);
           assert.equal(err.constructor, Error);
           assert.strictEqual(token, undefined);
+          done();
         });
-        assert.ok(called, 'callback was not invoked');
       });
 
-      it('handles low-level http errors correctly', function() {
+      it('handles low-level http errors correctly', function(done) {
         var ae = new appengine.AppEngine();
         var error = new Error('failed');
         ae.sendHttpRequest_ = function(options, body, callback) {
           callback(error);
         };
 
-        var called = false;
         var req = {appengine: {apiTicket: 'test123', devappserver: false}};
         ae.authGetServiceAccountToken_(req, function(err, token) {
-          called = true;
           assert.equal(err, error);
           assert.strictEqual(token, undefined);
+          done();
         });
-        assert.ok(called, 'callback was not invoked');
       });
     });
 
     describe('metadataGetAttribute_', function() {
-      it('returns an existing attribute', function() {
+      it('returns an existing attribute', function(done) {
         var ae = new appengine.AppEngine();
         ae.sendHttpRequest_ = function(options, body, callback) {
           assert.strictEqual(options.hostname, 'metadata');
@@ -763,17 +725,15 @@ describe('appengine', function() {
           callback(null, response);
         };
 
-        var called = false;
         var req = {appengine: {apiTicket: 'test123', devappserver: false}};
         ae.metadataGetAttribute_(req, 'name', function(err, value) {
-          called = true;
           assert.ifError(err);
           assert.strictEqual(value, 'value');
+          done();
         });
-        assert.ok(called, 'callback was not invoked');
       });
 
-      it('returns null for a non-existing attribute', function() {
+      it('returns null for a non-existing attribute', function(done) {
         var ae = new appengine.AppEngine();
         ae.sendHttpRequest_ = function(options, body, callback) {
           assert.strictEqual(options.hostname, 'metadata');
@@ -785,17 +745,15 @@ describe('appengine', function() {
           callback(null, response);
         };
 
-        var called = false;
         var req = {appengine: {apiTicket: 'test123', devappserver: false}};
         ae.metadataGetAttribute_(req, 'name', function(err, value) {
-          called = true;
           assert.ifError(err);
           assert.strictEqual(value, null);
+          done();
         });
-        assert.ok(called, 'callback was not invoked');
       });
 
-      it('handles metadata server errors correctly', function() {
+      it('handles metadata server errors correctly', function(done) {
         var ae = new appengine.AppEngine();
         ae.sendHttpRequest_ = function(options, body, callback) {
           assert.strictEqual(options.hostname, 'metadata');
@@ -807,37 +765,33 @@ describe('appengine', function() {
           callback(null, response);
         };
 
-        var called = false;
         var req = {appengine: {apiTicket: 'test123', devappserver: false}};
         ae.metadataGetAttribute_(req, 'name', function(err, value) {
-          called = true;
           assert.ok(!!err);
           assert.equal(err.constructor, Error);
           assert.strictEqual(value, undefined);
+          done();
         });
-        assert.ok(called, 'callback was not invoked');
       });
 
-      it('handles low-level http errors correctly', function() {
+      it('handles low-level http errors correctly', function(done) {
         var ae = new appengine.AppEngine();
         var error = new Error('failed');
         ae.sendHttpRequest_ = function(options, body, callback) {
           callback(error);
         };
 
-        var called = false;
         var req = {appengine: {apiTicket: 'test123', devappserver: false}};
         ae.metadataGetAttribute_(req, 'name', function(err, value) {
-          called = true;
           assert.equal(err, error);
           assert.strictEqual(value, undefined);
+          done();
         });
-        assert.ok(called, 'callback was not invoked');
       });
     });
 
     describe('middlewareBase_', function() {
-      it('processes basic request headers', function() {
+      it('processes basic request headers', function(done) {
         var ae = new appengine.AppEngine();
         var headers = {
           'x-appengine-api-ticket': 'a',
@@ -850,9 +804,7 @@ describe('appengine', function() {
         };
         var req = {headers: headers};
         var res = {};
-        var called = false;
         ae.middlewareBase_(req, res, function() {
-          called = true;
           assert(!!req.appengine);
           assert.strictEqual(req.appengine.apiTicket, 'a');
           assert.strictEqual(req.appengine.authDomain, 'b');
@@ -861,43 +813,41 @@ describe('appengine', function() {
           assert.strictEqual(req.appengine.https, 'e');
           assert.strictEqual(req.appengine.requestIdHash, 'f');
           assert.strictEqual(req.appengine.requestLogId, 'g');
+          done();
         });
-        assert.ok(called, 'next middleware was not invoked');
       });
 
-      it('detects the devappserver environment', function() {
+      it('detects the devappserver environment', function(done) {
         var ae = new appengine.AppEngine();
         var headers = {
           'x-appengine-dev-request-id': 'e',
         };
         var req = {headers: headers};
         var res = {};
-        var called = false;
         ae.middlewareBase_(req, res, function() {
-          called = true;
           assert(!!req.appengine);
           assert.strictEqual(req.appengine.devRequestId, 'e');
           assert.strictEqual(req.appengine.devappserver, true);
+          done();
         });
       });
 
-      it('detects the production environment', function() {
+      it('detects the production environment', function(done) {
         var ae = new appengine.AppEngine();
         var headers = {
           'x-appengine-api-ticket': 'a',
         };
         var req = {headers: headers};
         var res = {};
-        var called = false;
         ae.middlewareBase_(req, res, function() {
-          called = true;
           assert(!!req.appengine);
           assert.strictEqual(req.appengine.apiTicket, 'a');
           assert.strictEqual(req.appengine.devappserver, false);
+          done();
         });
       });
 
-      it('processes user headers', function() {
+      it('processes user headers', function(done) {
         var ae = new appengine.AppEngine();
         var headers = {
           'x-appengine-user-email': 'a',
@@ -908,20 +858,18 @@ describe('appengine', function() {
         };
         var req = {headers: headers};
         var res = {};
-        var called = false;
         ae.middlewareBase_(req, res, function() {
-          called = true;
           assert(!!req.appengine.user);
           assert.strictEqual(req.appengine.user.email, 'a');
           assert.strictEqual(req.appengine.user.ip, 'b');
           assert.strictEqual(req.appengine.user.isAdmin, 'c');
           assert.strictEqual(req.appengine.user.nickname, 'd');
           assert.strictEqual(req.appengine.user.organization, 'e');
+          done();
         });
-        assert.ok(called, 'next middleware was not invoked');
       });
 
-      it('processes geo headers', function() {
+      it('processes geo headers', function(done) {
         var ae = new appengine.AppEngine();
         var headers = {
           'x-appengine-city': 'a',
@@ -931,34 +879,30 @@ describe('appengine', function() {
         };
         var req = {headers: headers};
         var res = {};
-        var called = false;
         ae.middlewareBase_(req, res, function() {
-          called = true;
           assert(!!req.appengine.geo);
           assert.strictEqual(req.appengine.geo.city, 'a');
           assert.strictEqual(req.appengine.geo.cityLatLong, 'b');
           assert.strictEqual(req.appengine.geo.country, 'c');
           assert.strictEqual(req.appengine.geo.region, 'd');
+          done();
         });
-        assert.ok(called, 'next middleware was not invoked');
       });
 
-      it('handles incomplete geo headers', function() {
+      it('handles incomplete geo headers', function(done) {
         var ae = new appengine.AppEngine();
         var headers = {
           'x-appengine-country': 'ZZ',
         };
         var req = {headers: headers};
         var res = {};
-        var called = false;
         ae.middlewareBase_(req, res, function() {
-          called = true;
           assert(!req.appengine.geo);
+          done();
         });
-        assert.ok(called, 'next middleware was not invoked');
       });
 
-      it('processes task headers', function() {
+      it('processes task headers', function(done) {
         var ae = new appengine.AppEngine();
         var headers = {
           'x-appengine-taskexecutioncount': 'a',
@@ -968,16 +912,14 @@ describe('appengine', function() {
         };
         var req = {headers: headers};
         var res = {};
-        var called = false;
         ae.middlewareBase_(req, res, function() {
-          called = true;
           assert(!!req.appengine.task);
           assert.strictEqual(req.appengine.task.executionCount, 'a');
           assert.strictEqual(req.appengine.task.queueName, 'b');
           assert.strictEqual(req.appengine.task.retryCount, 'c');
           assert.strictEqual(req.appengine.task.taskName, 'd');
+          done();
         });
-        assert.ok(called, 'next middleware was not invoked');
       });
     });
   });
