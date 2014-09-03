@@ -69,7 +69,7 @@ describe('appengine', function() {
 
       // TODO: Add a test for a regular request-response interaction.
 
-      it('handles low-level errors', function() {
+      it('handles low-level errors', function(done) {
         tmp.tmpName(function(err, path) {
           assert.ifError(err);
           var responseHeaders = {'test': 'foobar'};
@@ -84,13 +84,14 @@ describe('appengine', function() {
           };
           ae.sendHttpRequest_(options, body, function(err, response) {
             assert.ok(!!err, 'expected an error');
+            done();
           });
         });
       });
     });
 
     describe('callApi_', function() {
-      it('handles success responses', function() {
+      it('handles success responses', function(done) {
         var ae = new appengine.AppEngine();
 
         var responseProto = new apphosting.base.VoidProto();
@@ -111,6 +112,7 @@ describe('appengine', function() {
           var actualResponseProto = new apphosting.base.VoidProto();
           serializer.deserializeTo(actualResponseProto, utils.stringToUint8Array(apiResponse.getResponse()));
           assert.deepEqual(actualResponseProto, responseProto);
+          done();
         });
       });
 
@@ -158,7 +160,7 @@ describe('appengine', function() {
         ae.callApi_('Test', 'test', req, proto, function(err) {});
       });
 
-      it('handles python exceptions', function() {
+      it('handles python exceptions', function(done) {
         var ae = new appengine.AppEngine();
 
         var response = new apphosting.ext.remote_api.Response();
@@ -173,10 +175,11 @@ describe('appengine', function() {
         ae.callApi_('Test', 'test', req, proto, function(err) {
           assert.equal(err.constructor, Error);
           assert.strictEqual(err.message, 'API error: python exception');
+          done();
         });
       });
 
-      it('handles java exceptions', function() {
+      it('handles java exceptions', function(done) {
         var ae = new appengine.AppEngine();
 
         var response = new apphosting.ext.remote_api.Response();
@@ -191,10 +194,11 @@ describe('appengine', function() {
         ae.callApi_('Test', 'test', req, proto, function(err) {
           assert.equal(err.constructor, Error);
           assert.strictEqual(err.message, 'API error: java exception');
+          done();
         });
       });
 
-      it('handles non-200 status codes', function() {
+      it('handles non-200 status codes', function(done) {
         var ae = new appengine.AppEngine();
         var proto = new apphosting.base.VoidProto();
         ae.sendHttpRequest_ = function(options, body, callback) {
@@ -205,10 +209,11 @@ describe('appengine', function() {
         ae.callApi_('Test', 'test', req, proto, function(err) {
           assert.equal(err.constructor, Error);
           assert.strictEqual(err.message, 'API error: test');
+          done();
         });
       });
 
-      it('handles low-level http errors', function() {
+      it('handles low-level http errors', function(done) {
         var ae = new appengine.AppEngine();
         var proto = new apphosting.base.VoidProto();
         var error = new Error('failed');
@@ -219,6 +224,7 @@ describe('appengine', function() {
         var req = {appengine: {apiTicket: 'test123', devappserver: false}};
         ae.callApi_('Test', 'test', req, proto, function(err) {
           assert.equal(err, error);
+          done();
         });
       });
     });
