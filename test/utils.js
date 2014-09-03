@@ -18,13 +18,13 @@ var assert = require('assert');
 var utils = require('../lib/utils.js');
 
 describe('numberArrayToString', function() {
-  it ('should convert a non-empty array', function() {
+  it('should convert a non-empty array', function() {
     var a = [65, 66];
     var s = utils.numberArrayToString(a);
     assert.strictEqual(s, 'AB');
   });
 
-  it ('should convert an empty array', function() {
+  it('should convert an empty array', function() {
     var a = [];
     var s = utils.numberArrayToString(a);
     assert.strictEqual(s, '');
@@ -32,14 +32,14 @@ describe('numberArrayToString', function() {
 });
 
 describe('bufferToUint8Array', function() {
-  it ('should convert a non-empty buffer', function() {
+  it('should convert a non-empty buffer', function() {
     var b = new Buffer(2);
     b.writeUInt16BE(0x1234);
     var a = utils.bufferToUint8Array(b);
     assert.deepEqual(a, new Uint8Array([0x12, 0x34]));
   });
 
-  it ('should convert an empty buffer', function() {
+  it('should convert an empty buffer', function() {
     var b = new Buffer(0);
     var a = utils.bufferToUint8Array(b);
     assert.deepEqual(a, new Uint8Array([]));
@@ -47,12 +47,12 @@ describe('bufferToUint8Array', function() {
 });
 
 describe('stringToUint8Array', function() {
-  it ('should convert a non-empty string', function() {
+  it('should convert a non-empty string', function() {
     var a = utils.stringToUint8Array('AB');
     assert.deepEqual(a, new Uint8Array([65, 66]));
   });
 
-  it ('should convert an empty string', function() {
+  it('should convert an empty string', function() {
     var a = utils.stringToUint8Array('');
     assert.deepEqual(a, new Uint8Array([]));
   });
