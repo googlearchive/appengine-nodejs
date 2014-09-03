@@ -204,7 +204,7 @@ describe('appengine', function() {
         var req = {appengine: {apiTicket: 'test123', devappserver: false}};
         ae.callApi_('Test', 'test', req, proto, function(err) {
           assert.equal(err.constructor, Error);
-          assert.equal(err.message, 'API error: test');
+          assert.strictEqual(err.message, 'API error: test');
         });
       });
 
@@ -228,10 +228,10 @@ describe('appengine', function() {
         var req = {appengine: {devappserver: false}};
         var ae = new appengine.AppEngine();
         var options = ae.getRemoteApiRequestOptions_(req, new Buffer(100));
-        assert.equal(options.hostname, 'appengine.googleapis.com');
-        assert.equal(options.port, 10001);
-        assert.equal(options.path, '/rpc_http');
-        assert.equal(options.method, 'POST');
+        assert.strictEqual(options.hostname, 'appengine.googleapis.com');
+        assert.strictEqual(options.port, 10001);
+        assert.strictEqual(options.path, '/rpc_http');
+        assert.strictEqual(options.method, 'POST');
         assert.deepEqual(options.headers, {
           'Content-Type': 'application/octet-stream',
           'Content-Length': 100,
@@ -242,15 +242,15 @@ describe('appengine', function() {
 
       it('returns the correct options for the devappserver', function() {
         process.env['API_HOST'] = 'foo';
-        process.env['API_PORT'] = 8888;
+        process.env['API_PORT'] = '8888';
         var ae = new appengine.AppEngine();
 
         var req = {appengine: {devappserver: true}};
         var options = ae.getRemoteApiRequestOptions_(req, new Buffer(100));
-        assert.equal(options.hostname, 'foo');
-        assert.equal(options.port, 8888);
-        assert.equal(options.path, '/rpc_http');
-        assert.equal(options.method, 'POST');
+        assert.strictEqual(options.hostname, 'foo');
+        assert.strictEqual(options.port, 8888);
+        assert.strictEqual(options.path, '/rpc_http');
+        assert.strictEqual(options.method, 'POST');
         assert.deepEqual(options.headers, {
           'Content-Type': 'application/octet-stream',
           'Content-Length': 100,
@@ -351,10 +351,10 @@ describe('appengine', function() {
           assert.strictEqual(methodName, 'Flush');
           var userAppLogGroup = new apphosting.UserAppLogGroup();
           serializer.deserializeTo(userAppLogGroup, utils.stringToUint8Array(proto.getLogs()));
-          assert.equal(userAppLogGroup.logLineCount(), 1);
+          assert.strictEqual(userAppLogGroup.logLineCount(), 1);
           var logLine = userAppLogGroup.getLogLine(0);
-          assert.equal(logLine.getTimestampUsec(), (time * 1000).toString());
-          assert.equal(logLine.getLevel(), 0);
+          assert.strictEqual(logLine.getTimestampUsec(), (time * 1000).toString());
+          assert.strictEqual(logLine.getLevel(), '0');
           assert.strictEqual(logLine.getMessage(), 'test');
           var response = new apphosting.ext.remote_api.Response();
           var voidResponse = new apphosting.base.VoidProto();
@@ -389,7 +389,7 @@ describe('appengine', function() {
         ae.callApi_ = function(serviceName, methodName, req, proto, callback) {
           assert.strictEqual(serviceName, 'memcache');
           assert.strictEqual(methodName, 'Get');
-          assert.equal(proto.keyCount(), 1);
+          assert.strictEqual(proto.keyCount(), 1);
           assert.strictEqual(proto.getKey(0), 'key');
           var response = new apphosting.ext.remote_api.Response();
           var memcacheResponse = new apphosting.MemcacheGetResponse();
@@ -414,7 +414,7 @@ describe('appengine', function() {
         ae.callApi_ = function(serviceName, methodName, req, proto, callback) {
           assert.strictEqual(serviceName, 'memcache');
           assert.strictEqual(methodName, 'Get');
-          assert.equal(proto.keyCount(), 1);
+          assert.strictEqual(proto.keyCount(), 1);
           assert.strictEqual(proto.getKey(0), 'key');
           var response = new apphosting.ext.remote_api.Response();
           var memcacheResponse = new apphosting.MemcacheGetResponse();
@@ -451,7 +451,7 @@ describe('appengine', function() {
         ae.callApi_ = function(serviceName, methodName, req, proto, callback) {
           assert.strictEqual(serviceName, 'memcache');
           assert.strictEqual(methodName, 'Set');
-          assert.equal(proto.itemCount(), 1);
+          assert.strictEqual(proto.itemCount(), 1);
           assert.strictEqual(proto.getItem(0).getKey(), 'key');
           assert.strictEqual(proto.getItem(0).getValue(), 'value');
           var response = new apphosting.ext.remote_api.Response();
