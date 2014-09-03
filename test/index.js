@@ -241,9 +241,11 @@ describe('appengine', function() {
       });
 
       it('returns the correct options for the devappserver', function() {
-        process.env['API_HOST'] = 'foo';
-        process.env['API_PORT'] = '8888';
+        var env = {'API_HOST': 'foo', 'API_PORT':'8888'};
         var ae = new appengine.AppEngine();
+        ae.getProcessEnv_ = function(name) {
+          return env[name]
+        }
 
         var req = {appengine: {devappserver: true}};
         var options = ae.getRemoteApiRequestOptions_(req, new Buffer(100));
@@ -267,6 +269,17 @@ describe('appengine', function() {
         var time = ae.getCurrentTime_();
         var after = new Date().getTime();
         assert.ok(before <= time && time <= after);
+      });
+    });
+
+    describe('getProcessEnv_', function() {
+      it('returns the properties of process.env', function() {
+        var ae = new appengine.AppEngine();
+        for (var p in process.env) {
+          if (process.env.hasOwnProperty(p)) {
+            assert.strictEqual(ae.getProcessEnv_(p), process.env[p]);
+          }
+        }
       });
     });
 
