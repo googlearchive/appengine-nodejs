@@ -63,6 +63,69 @@ describe('appengine', function() {
         assert.strictEqual(typeof(appengine.metadata.getAttribute), 'function');
         assert.strictEqual(typeof(appengine.middleware.base), 'function');
       });
+
+      it('should export the correct function for memcache.get', function(done) {
+        var ae = new appengine.AppEngine();
+        ae.memcacheGet_ = function() {
+          done();
+        };
+        ae.exportAll_();
+        ae.memcache.get();
+      });
+
+      it('should export the correct function for memcache.set', function(done) {
+        var ae = new appengine.AppEngine();
+        ae.memcacheSet_ = function() {
+          done();
+        };
+        ae.exportAll_();
+        ae.memcache.set();
+      });
+
+      it('should export the correct function for taskqueue.add', function(done) {
+        var ae = new appengine.AppEngine();
+        ae.taskQueueAdd_ = function() {
+          done();
+        };
+        ae.exportAll_();
+        ae.taskqueue.add();
+      });
+
+      it('should export the correct function for modules.getHostname', function(done) {
+        var ae = new appengine.AppEngine();
+        ae.modulesGetHostname_ = function() {
+          done();
+        };
+        ae.exportAll_();
+        ae.modules.getHostname();
+      });
+
+      it('should export the correct function for auth.getServiceAccountToken', function(done) {
+        var ae = new appengine.AppEngine();
+        ae.authGetServiceAccountToken_ = function() {
+          done();
+        };
+        ae.exportAll_();
+        ae.auth.getServiceAccountToken();
+      });
+
+      it('should export the correct function for metadata.getAttribute', function(done) {
+        var ae = new appengine.AppEngine();
+        ae.metadataGetAttribute_ = function() {
+          done();
+        };
+        ae.exportAll_();
+        ae.metadata.getAttribute();
+      });
+
+      it('should export the correct function for middleware.base', function(done) {
+        var ae = new appengine.AppEngine();
+        ae.middlewareBase_ = function() {
+          done();
+        };
+        ae.exportAll_();
+        ae.middleware.base();
+      });
     });
 
     describe('sendHttpRequest_', function() {
