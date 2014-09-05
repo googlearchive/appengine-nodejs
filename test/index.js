@@ -313,7 +313,7 @@ describe('appengine', function() {
         var env = {'API_HOST': 'foo', 'API_PORT':'8888'};
         var ae = new appengine.AppEngine();
         ae.getProcessEnv_ = function(name) {
-          return env[name]
+          return env[name];
         }
 
         var req = {appengine: {devappserver: true}};
@@ -944,15 +944,15 @@ describe('appengine', function() {
 
       it('processes environment variables', function(done) {
         var env = {
-          'GAE_LONG_APP_ID' : 'my-test-app',
-          'GAE_MODULE_NAME' : 'foo',
-          'GAE_MODULE_VERSION' : 'bar',
-          'GAE_MODULE_INSTANCE' : '0',
-          'GAE_MINOR_VERSION' : '1234567890'
+          'GAE_LONG_APP_ID': 'my-test-app',
+          'GAE_MODULE_NAME': 'foo',
+          'GAE_MODULE_VERSION': 'bar',
+          'GAE_MODULE_INSTANCE': '0',
+          'GAE_MINOR_VERSION': '1234567890'
         };
         var ae = new appengine.AppEngine();
         ae.getProcessEnv_ = function(name) {
-          return env[name]
+          return env[name];
         }
         var req = {headers: {'x-appengine-api-ticket': 'a'}};
         var res = {};
@@ -969,14 +969,14 @@ describe('appengine', function() {
 
       it('processes environment variables in the dev appserver', function(done) {
         var env = {
-          'GAE_LONG_APP_ID' : 'my-test-app',
-          'GAE_MODULE_NAME' : 'foo',
-          'GAE_MODULE_VERSION' : 'bar',
-          'GAE_MINOR_VERSION' : '1234567890'
+          'GAE_LONG_APP_ID': 'my-test-app',
+          'GAE_MODULE_NAME': 'foo',
+          'GAE_MODULE_VERSION': 'bar',
+          'GAE_MINOR_VERSION': '1234567890'
         };
         var ae = new appengine.AppEngine();
         ae.getProcessEnv_ = function(name) {
-          return env[name]
+          return env[name];
         }
         var req = {headers: {'x-appengine-dev-request-id': 'a'}};
         var res = {};
