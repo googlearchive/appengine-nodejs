@@ -900,7 +900,7 @@ describe('appengine', function() {
         var req = {headers: headers};
         var res = {};
         ae.middlewareBase_(req, res, function() {
-          assert(!!req.appengine);
+          assert.ok(!!req.appengine);
           assert.strictEqual(req.appengine.apiTicket, 'a');
           assert.strictEqual(req.appengine.authDomain, 'b');
           assert.strictEqual(req.appengine.datacenter, 'c');
@@ -920,7 +920,7 @@ describe('appengine', function() {
         var req = {headers: headers};
         var res = {};
         ae.middlewareBase_(req, res, function() {
-          assert(!!req.appengine);
+          assert.ok(!!req.appengine);
           assert.strictEqual(req.appengine.devRequestId, 'e');
           assert.strictEqual(req.appengine.devappserver, true);
           done();
@@ -935,9 +935,58 @@ describe('appengine', function() {
         var req = {headers: headers};
         var res = {};
         ae.middlewareBase_(req, res, function() {
-          assert(!!req.appengine);
+          assert.ok(!!req.appengine);
           assert.strictEqual(req.appengine.apiTicket, 'a');
           assert.strictEqual(req.appengine.devappserver, false);
+          done();
+        });
+      });
+
+      it('processes environment variables', function(done) {
+        var env = {
+          'GAE_LONG_APP_ID' : 'my-test-app',
+          'GAE_MODULE_NAME' : 'foo',
+          'GAE_MODULE_VERSION' : 'bar',
+          'GAE_MODULE_INSTANCE' : '0',
+          'GAE_MINOR_VERSION' : '1234567890'
+        };
+        var ae = new appengine.AppEngine();
+        ae.getProcessEnv_ = function(name) {
+          return env[name]
+        }
+        var req = {headers: {'x-appengine-api-ticket': 'a'}};
+        var res = {};
+        ae.middlewareBase_(req, res, function() {
+          assert.ok(!!req.appengine);
+          assert.strictEqual(req.appengine.appId, 'my-test-app');
+          assert.strictEqual(req.appengine.moduleName, 'foo');
+          assert.strictEqual(req.appengine.moduleVersion, 'bar');
+          assert.strictEqual(req.appengine.moduleInstance, '0');
+          assert.strictEqual(req.appengine.minorVersion, '1234567890');
+          done();
+        });
+      });
+
+      it('processes environment variables in the dev appserver', function(done) {
+        var env = {
+          'GAE_LONG_APP_ID' : 'my-test-app',
+          'GAE_MODULE_NAME' : 'foo',
+          'GAE_MODULE_VERSION' : 'bar',
+          'GAE_MINOR_VERSION' : '1234567890'
+        };
+        var ae = new appengine.AppEngine();
+        ae.getProcessEnv_ = function(name) {
+          return env[name]
+        }
+        var req = {headers: {'x-appengine-dev-request-id': 'a'}};
+        var res = {};
+        ae.middlewareBase_(req, res, function() {
+          assert.ok(!!req.appengine);
+          assert.strictEqual(req.appengine.appId, 'my-test-app');
+          assert.strictEqual(req.appengine.moduleName, 'foo');
+          assert.strictEqual(req.appengine.moduleVersion, 'bar');
+          assert.ok(!req.appengine.hasOwnProperty('moduleInstance'));
+          assert.strictEqual(req.appengine.minorVersion, '1234567890');
           done();
         });
       });
@@ -954,7 +1003,7 @@ describe('appengine', function() {
         var req = {headers: headers};
         var res = {};
         ae.middlewareBase_(req, res, function() {
-          assert(!!req.appengine.user);
+          assert.ok(!!req.appengine.user);
           assert.strictEqual(req.appengine.user.email, 'a');
           assert.strictEqual(req.appengine.user.ip, 'b');
           assert.strictEqual(req.appengine.user.isAdmin, 'c');
@@ -975,7 +1024,7 @@ describe('appengine', function() {
         var req = {headers: headers};
         var res = {};
         ae.middlewareBase_(req, res, function() {
-          assert(!!req.appengine.geo);
+          assert.ok(!!req.appengine.geo);
           assert.strictEqual(req.appengine.geo.city, 'a');
           assert.strictEqual(req.appengine.geo.cityLatLong, 'b');
           assert.strictEqual(req.appengine.geo.country, 'c');
@@ -992,7 +1041,7 @@ describe('appengine', function() {
         var req = {headers: headers};
         var res = {};
         ae.middlewareBase_(req, res, function() {
-          assert(!req.appengine.geo);
+          assert.ok(!req.appengine.geo);
           done();
         });
       });
@@ -1008,7 +1057,7 @@ describe('appengine', function() {
         var req = {headers: headers};
         var res = {};
         ae.middlewareBase_(req, res, function() {
-          assert(!!req.appengine.task);
+          assert.ok(!!req.appengine.task);
           assert.strictEqual(req.appengine.task.executionCount, 'a');
           assert.strictEqual(req.appengine.task.queueName, 'b');
           assert.strictEqual(req.appengine.task.retryCount, 'c');
