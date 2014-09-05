@@ -19,7 +19,7 @@
     "tmp": "^0.0.24"
   },
   "scripts": {
-    "lint": "jshint lib/ test/",
+    "lint": "jshint lib/*.js test/*.js",
     "test": "mocha --recursive --reporter spec"
   }
 }
