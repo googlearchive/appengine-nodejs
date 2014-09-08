@@ -14,12 +14,14 @@
   },
   "license": "Apache 2",
   "devDependencies": {
+    "istanbul": "^0.3.0",
     "jshint": "^2.5.2",
     "mocha": "^1.21.3",
     "tmp": "^0.0.24"
   },
   "scripts": {
     "lint": "jshint lib/*.js test/*.js",
-    "test": "mocha --recursive --reporter spec"
+    "test": "mocha --recursive --reporter spec",
+    "cover": "node_modules/istanbul/lib/cli.js cover node_modules/mocha/bin/_mocha -- --reporter spec"
   }
 }
