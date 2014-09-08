@@ -22,6 +22,6 @@
   "scripts": {
     "lint": "jshint lib/*.js test/*.js",
     "test": "mocha --recursive --reporter spec",
-    "cover": "node_modules/istanbul/lib/cli.js cover node_modules/mocha/bin/_mocha -- --reporter spec"
+    "cover" : "istanbul cover _mocha -- --reporter spec"
   }
 }
