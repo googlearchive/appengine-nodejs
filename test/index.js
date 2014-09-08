@@ -12,10 +12,11 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+/* global apphosting, describe, goog, it, net */
+
 'use strict';
 
 var assert = require('assert');
-var http = require('http');
 var tmp = require('tmp');
 
 var appengine = require('../lib/index.js');
@@ -135,8 +136,6 @@ describe('appengine', function() {
       it('handles low-level errors', function(done) {
         tmp.tmpName(function(err, path) {
           assert.ifError(err);
-          var responseHeaders = {'test': 'foobar'};
-          var responseBody = new Buffer('ABCD');
           var ae = new appengine.AppEngine();
           var body = new Buffer(10);
           body.fill('a');
@@ -145,7 +144,7 @@ describe('appengine', function() {
             path: '/',
             method: 'GET'
           };
-          ae.sendHttpRequest_(options, body, function(err, response) {
+          ae.sendHttpRequest_(options, body, function(err) {
             assert.ok(!!err, 'expected an error');
             done();
           });
@@ -163,7 +162,7 @@ describe('appengine', function() {
         var responseBody = new Buffer(serializer.serialize(response));
         ae.sendHttpRequest_ = function(options, body, callback) {
           callback(null, {statusCode: 200, body: responseBody});
-        }
+        };
 
         var req = {appengine: {apiTicket: 'test123', devappserver: false}};
         var proto = new apphosting.base.VoidProto();
@@ -190,15 +189,15 @@ describe('appengine', function() {
         var responseBody = new Buffer(serializer.serialize(response));
         ae.sendHttpRequest_ = function(options, body, callback) {
           callback(null, {statusCode: 200, body: responseBody});
-        }
+        };
         ae.translateApplicationError_ = function(applicationError) {
           assert.deepEqual(applicationError, error);
           done();
-        }
+        };
 
         var req = {appengine: {apiTicket: 'test123', devappserver: false}};
         var proto = new apphosting.base.VoidProto();
-        ae.callApi_('Test', 'test', req, proto, function(err) {});
+        ae.callApi_('Test', 'test', req, proto, function() {});
       });
 
       it('handles rpc errors', function(done) {
@@ -212,15 +211,15 @@ describe('appengine', function() {
         var responseBody = new Buffer(serializer.serialize(response));
         ae.sendHttpRequest_ = function(options, body, callback) {
           callback(null, {statusCode: 200, body: responseBody});
-        }
+        };
         ae.translateRpcError_ = function(rpcError) {
           assert.deepEqual(rpcError, error);
           done();
-        }
+        };
 
         var req = {appengine: {apiTicket: 'test123', devappserver: false}};
         var proto = new apphosting.base.VoidProto();
-        ae.callApi_('Test', 'test', req, proto, function(err) {});
+        ae.callApi_('Test', 'test', req, proto, function() {});
       });
 
       it('handles python exceptions', function(done) {
@@ -231,7 +230,7 @@ describe('appengine', function() {
         var responseBody = new Buffer(serializer.serialize(response));
         ae.sendHttpRequest_ = function(options, body, callback) {
           callback(null, {statusCode: 200, body: responseBody});
-        }
+        };
 
         var req = {appengine: {apiTicket: 'test123', devappserver: false}};
         var proto = new apphosting.base.VoidProto();
@@ -250,7 +249,7 @@ describe('appengine', function() {
         var responseBody = new Buffer(serializer.serialize(response));
         ae.sendHttpRequest_ = function(options, body, callback) {
           callback(null, {statusCode: 200, body: responseBody});
-        }
+        };
 
         var req = {appengine: {apiTicket: 'test123', devappserver: false}};
         var proto = new apphosting.base.VoidProto();
@@ -266,7 +265,7 @@ describe('appengine', function() {
         var proto = new apphosting.base.VoidProto();
         ae.sendHttpRequest_ = function(options, body, callback) {
           callback(null, {statusCode: 500, body: new Buffer('test')});
-        }
+        };
 
         var req = {appengine: {apiTicket: 'test123', devappserver: false}};
         ae.callApi_('Test', 'test', req, proto, function(err) {
@@ -282,7 +281,7 @@ describe('appengine', function() {
         var error = new Error('failed');
         ae.sendHttpRequest_ = function(options, body, callback) {
           callback(error);
-        }
+        };
 
         var req = {appengine: {apiTicket: 'test123', devappserver: false}};
         ae.callApi_('Test', 'test', req, proto, function(err) {
@@ -314,7 +313,7 @@ describe('appengine', function() {
         var ae = new appengine.AppEngine();
         ae.getProcessEnv_ = function(name) {
           return env[name];
-        }
+        };
 
         var req = {appengine: {devappserver: true}};
         var options = ae.getRemoteApiRequestOptions_(req, new Buffer(100));
@@ -440,7 +439,7 @@ describe('appengine', function() {
         var time = new Date().getTime();
         ae.getCurrentTime_ = function() {
           return time;
-        }
+        };
         ae.callApi_ = function(serviceName, methodName, req, proto, callback) {
           assert.strictEqual(serviceName, 'logservice');
           assert.strictEqual(methodName, 'Flush');
@@ -533,7 +532,7 @@ describe('appengine', function() {
         };
 
         var req = {appengine: {apiTicket: 'test123', devappserver: false}};
-        ae.memcacheGet_(req, 'key', function(err, value) {
+        ae.memcacheGet_(req, 'key', function(err) {
           assert.equal(err, error);
           done();
         });
@@ -571,7 +570,7 @@ describe('appengine', function() {
         };
 
         var req = {appengine: {apiTicket: 'test123', devappserver: false}};
-        ae.memcacheSet_(req, 'key', 'value', function(err, value) {
+        ae.memcacheSet_(req, 'key', 'value', function(err) {
           assert.equal(err, error);
           done();
         });
@@ -664,7 +663,7 @@ describe('appengine', function() {
           headers: {'foo': 'bar'}
         };
         var req = {appengine: {apiTicket: 'test123', devappserver: false}};
-        ae.taskQueueAdd_(req, options, function(err, taskName) {
+        ae.taskQueueAdd_(req, options, function(err) {
           assert.equal(err, error);
           done();
         });
@@ -703,7 +702,7 @@ describe('appengine', function() {
         };
 
         var req = {appengine: {apiTicket: 'test123', devappserver: false}};
-        ae.modulesGetHostname_(req, 'module', 'version', 'instance', function(err, value) {
+        ae.modulesGetHostname_(req, 'module', 'version', 'instance', function(err) {
           assert.equal(err, error);
           done();
         });
@@ -740,7 +739,7 @@ describe('appengine', function() {
         };
 
         var req = {appengine: {apiTicket: 'test123', devappserver: false}};
-        ae.systemStartBackgroundRequest_(req, function(err, value) {
+        ae.systemStartBackgroundRequest_(req, function(err) {
           assert.equal(err, error);
           done();
         });
@@ -953,7 +952,7 @@ describe('appengine', function() {
         var ae = new appengine.AppEngine();
         ae.getProcessEnv_ = function(name) {
           return env[name];
-        }
+        };
         var req = {headers: {'x-appengine-api-ticket': 'a'}};
         var res = {};
         ae.middlewareBase_(req, res, function() {
@@ -977,7 +976,7 @@ describe('appengine', function() {
         var ae = new appengine.AppEngine();
         ae.getProcessEnv_ = function(name) {
           return env[name];
-        }
+        };
         var req = {headers: {'x-appengine-dev-request-id': 'a'}};
         var res = {};
         ae.middlewareBase_(req, res, function() {
