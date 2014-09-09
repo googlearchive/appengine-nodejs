@@ -17,6 +17,7 @@
 'use strict';
 
 var assert = require('assert');
+var http = require('http');
 var tmp = require('tmp');
 
 var appengine = require('../lib/index.js');
@@ -130,8 +131,91 @@ describe('appengine', function() {
     });
 
     describe('sendHttpRequest_', function() {
+      it('sends a request and invokes the callback with the response', function(done) {
+        tmp.tmpName(function(err, path) {
+          assert.ifError(err);
+          var responseHeaders = {'test': 'bar'};
+          var responseBody = new Buffer('ABCD');
 
-      // TODO: Add a test for a regular request-response interaction.
+          var server = http.createServer(function(request, response) {
+            assert.strictEqual(request.url, '/');
+            assert.strictEqual(request.method, 'POST');
+            assert.strictEqual(request.headers.test, 'foo');
+            var chunks = [];
+            request.on('data', function(chunk) {
+              chunks.push(chunk);
+            });
+            request.on('end', function() {
+              var body = Buffer.concat(chunks);
+              assert.deepEqual(body, requestBody);
+              response.writeHead(200, 'OK', responseHeaders);
+              response.write(responseBody);
+              response.end();
+            });
+          });
+          server.listen(path);
+
+          var ae = new appengine.AppEngine();
+          var requestBody = new Buffer(10);
+          requestBody.fill('a');
+          var options = {
+            socketPath: path,
+            path: '/',
+            method: 'POST',
+            headers: {'test': 'foo'}
+          };
+          ae.sendHttpRequest_(options, requestBody, function(err, response) {
+            assert.ifError(err);
+            assert.strictEqual(response.statusCode, 200);
+            assert.strictEqual(response.headers.test, 'bar');
+            assert.deepEqual(response.body, responseBody);
+            server.close();
+            done();
+          });
+        });
+      });
+
+      it('sends a request with an empty body and invokes the callback with the response', function(done) {
+        tmp.tmpName(function(err, path) {
+          assert.ifError(err);
+          var responseHeaders = {'test': 'bar'};
+          var responseBody = new Buffer('ABCD');
+
+          var server = http.createServer(function(request, response) {
+            assert.strictEqual(request.url, '/');
+            assert.strictEqual(request.method, 'POST');
+            assert.strictEqual(request.headers.test, 'foo');
+            var chunks = [];
+            request.on('data', function(chunk) {
+              chunks.push(chunk);
+            });
+            request.on('end', function() {
+              var body = Buffer.concat(chunks);
+              assert.deepEqual(body, new Buffer(0));
+              response.writeHead(200, 'OK', responseHeaders);
+              response.write(responseBody);
+              response.end();
+            });
+          });
+          server.listen(path);
+
+          var ae = new appengine.AppEngine();
+          var options = {
+            socketPath: path,
+            path: '/',
+            method: 'POST',
+            headers: {'test': 'foo'}
+          };
+          ae.sendHttpRequest_(options, null, function(err, response) {
+            assert.ifError(err);
+            assert.strictEqual(response.statusCode, 200);
+            assert.strictEqual(response.headers.test, 'bar');
+            assert.deepEqual(response.body, responseBody);
+            server.close();
+            done();
+          });
+        });
+      });
 
       it('handles low-level errors', function(done) {
         tmp.tmpName(function(err, path) {
@@ -537,6 +621,20 @@ describe('appengine', function() {
           done();
         });
       });
+
+      it('handles a missing response protobuf correctly', function(done) {
+        var ae = new appengine.AppEngine();
+        ae.callApi_ = function(serviceName, methodName, req, proto, callback) {
+          var response = new apphosting.ext.remote_api.Response();
+          callback(null, response);
+        };
+
+        var req = {appengine: {apiTicket: 'test123', devappserver: false}};
+        ae.memcacheGet_(req, 'key', function(err) {
+          assert.ok(!!err);
+          done();
+        });
+      });
     });
 
     describe('memcacheSet_', function() {
@@ -572,6 +670,20 @@ describe('appengine', function() {
         var req = {appengine: {apiTicket: 'test123', devappserver: false}};
         ae.memcacheSet_(req, 'key', 'value', function(err) {
           assert.equal(err, error);
+          done();
+        });
+      });
+
+      it('handles a missing response protobuf correctly', function(done) {
+        var ae = new appengine.AppEngine();
+        ae.callApi_ = function(serviceName, methodName, req, proto, callback) {
+          var response = new apphosting.ext.remote_api.Response();
+          callback(null, response);
+        };
+
+        var req = {appengine: {apiTicket: 'test123', devappserver: false}};
+        ae.memcacheSet_(req, 'key', 'value', function(err) {
+          assert.ok(!!err);
           done();
         });
       });
@@ -668,6 +780,29 @@ describe('appengine', function() {
           done();
         });
       });
+
+      it('handles a missing response protobuf correctly', function(done) {
+        var ae = new appengine.AppEngine();
+        ae.callApi_ = function(serviceName, methodName, req, proto, callback) {
+          var response = new apphosting.ext.remote_api.Response();
+          callback(null, response);
+        };
+
+        var options = {
+          url: 'url',
+          queueName: 'queue',
+          taskName: 'task',
+          etaUsec: '10000000',
+          method: 'post',
+          body: 'test',
+          headers: {'foo': 'bar'}
+        };
+        var req = {appengine: {apiTicket: 'test123', devappserver: false}};
+        ae.taskQueueAdd_(req, options, function(err) {
+          assert.ok(!!err);
+          done();
+        });
+      });
     });
 
     describe('modulesGetHostname_', function() {
@@ -707,6 +842,20 @@ describe('appengine', function() {
           done();
         });
       });
+
+      it('handles a missing response protobuf correctly', function(done) {
+        var ae = new appengine.AppEngine();
+        ae.callApi_ = function(serviceName, methodName, req, proto, callback) {
+          var response = new apphosting.ext.remote_api.Response();
+          callback(null, response);
+        };
+
+        var req = {appengine: {apiTicket: 'test123', devappserver: false}};
+        ae.modulesGetHostname_(req, 'module', 'version', 'instance', function(err) {
+          assert.ok(!!err);
+          done();
+        });
+      });
     });
 
     describe('systemStartBackgroundRequest_', function() {
@@ -741,6 +890,20 @@ describe('appengine', function() {
         var req = {appengine: {apiTicket: 'test123', devappserver: false}};
         ae.systemStartBackgroundRequest_(req, function(err) {
           assert.equal(err, error);
+          done();
+        });
+      });
+
+      it('handles a missing response protobuf correctly', function(done) {
+        var ae = new appengine.AppEngine();
+        ae.callApi_ = function(serviceName, methodName, req, proto, callback) {
+          var response = new apphosting.ext.remote_api.Response();
+          callback(null, response);
+        };
+
+        var req = {appengine: {apiTicket: 'test123', devappserver: false}};
+        ae.systemStartBackgroundRequest_(req, function(err) {
+          assert.ok(!!err);
           done();
         });
       });
