@@ -373,6 +373,36 @@ describe('appengine', function() {
           done();
         });
       });
+
+      it('fails if the request object is null', function(done) {
+        var ae = new appengine.AppEngine();
+        var proto = new apphosting.base.VoidProto();
+        ae.callApi_('Test', 'test', null, proto, function(err) {
+          assert.equal(err.constructor, Error);
+          assert.strictEqual(err.message, 'invalid request object: null');
+          done();
+        });
+      });
+
+      it('fails if the request object is undefined', function(done) {
+        var ae = new appengine.AppEngine();
+        var proto = new apphosting.base.VoidProto();
+        ae.callApi_('Test', 'test', undefined, proto, function(err) {
+          assert.equal(err.constructor, Error);
+          assert.strictEqual(err.message, 'invalid request object: undefined');
+          done();
+        });
+      });
+
+      it('fails if the request object does not have the appengine extensions', function(done) {
+        var ae = new appengine.AppEngine();
+        var proto = new apphosting.base.VoidProto();
+        ae.callApi_('Test', 'test', {}, proto, function(err) {
+          assert.equal(err.constructor, Error);
+          assert.strictEqual(err.message, 'invalid request object: missing appengine extensions');
+          done();
+        });
+      });
     });
 
     describe('getRemoteApiRequestOptions_', function() {
