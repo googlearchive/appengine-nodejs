@@ -97,6 +97,18 @@ Add a task to a queue. `taskOptions` must be an object with the following proper
 
 Returns the hostname (a string) to use to talk to the given module/version/instance (all strings, all required).
 
+### System
+
+~~~~
+  appengine.system.getBackgroundRequest(request, function(err, backgroundRequest) { ... });
+~~~~
+
+Returns a new request-like object that can be used to make App Engine API calls from outside a regular request context.
+
+A common pattern is to call this API during a start request and store the returned request object for later use.
+
+Application code should not assume any specific properties to be defined on the returned background request object.
+
 ### Auth
 
 ~~~~
