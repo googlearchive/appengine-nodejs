@@ -103,7 +103,7 @@ Returns the hostname (a string) to use to talk to the given module/version/insta
   appengine.system.getBackgroundRequest(request, function(err, backgroundRequest) { ... });
 ~~~~
 
-Returns a new request-like object that can be used to make App Engine API calls from outside a regular request context.
+Returns a new request-like object that can be used to make App Engine API calls in the background, i.e. outside a request handler.
 
 A common pattern is to call this API during a start request and store the returned request object for later use.
 

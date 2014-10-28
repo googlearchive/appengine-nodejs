@@ -400,6 +400,7 @@ describe('appengine', function() {
         ae.validateRequest_ = function (request) {
           assert.strictEqual(request, req);
           done();
+          return null;
         };
         var proto = new apphosting.base.VoidProto();
         ae.callApi_('Test', 'test', req, proto, function(err, apiResponse) {
@@ -410,6 +411,24 @@ describe('appengine', function() {
           var actualResponseProto = new apphosting.base.VoidProto();
           serializer.deserializeTo(actualResponseProto, utils.stringToUint8Array(apiResponse.getResponse()));
           assert.deepEqual(actualResponseProto, responseProto);
+        });
+      });
+
+      it('fails if the request is null', function(done) {
+        var ae = new appengine.AppEngine();
+        var proto = new apphosting.base.VoidProto();
+        ae.callApi_('Test', 'test', null, proto, function(err) {
+          assert.ok(!!err);
+          done();
+        });
+      });
+
+      it('fails if the request is undefined', function(done) {
+        var ae = new appengine.AppEngine();
+        var proto = new apphosting.base.VoidProto();
+        ae.callApi_('Test', 'test', undefined, proto, function(err) {
+          assert.ok(!!err);
+          done();
         });
       });
     });
@@ -490,36 +509,28 @@ describe('appengine', function() {
     describe('validateRequest_', function() {
       it('handles valid requests', function() {
         var ae = new appengine.AppEngine();
-        ae.validateRequest_({appengine: {}}, function(err) {
-          assert.ifError(err);
-        });
+        assert.ifError(ae.validateRequest_({appengine: {}}));
       });
 
-      it('fails if the request object is null', function(done) {
+      it('fails if the request object is null', function() {
         var ae = new appengine.AppEngine();
-        ae.validateRequest_(null, function(err) {
-          assert.equal(err.constructor, Error);
-          assert.strictEqual(err.message, 'invalid request object: null');
-          done();
-        });
+        var maybeError = ae.validateRequest_(null);
+        assert.equal(maybeError.constructor, Error);
+        assert.strictEqual(maybeError.message, 'invalid request object: null');
       });
 
-      it('fails if the request object is undefined', function(done) {
+      it('fails if the request object is undefined', function() {
         var ae = new appengine.AppEngine();
-        ae.validateRequest_(undefined, function(err) {
-          assert.equal(err.constructor, Error);
-          assert.strictEqual(err.message, 'invalid request object: undefined');
-          done();
-        });
+        var maybeError = ae.validateRequest_(undefined);
+        assert.equal(maybeError.constructor, Error);
+        assert.strictEqual(maybeError.message, 'invalid request object: undefined');
       });
 
-      it('fails if the request object does not have the appengine extensions', function(done) {
+      it('fails if the request object does not have the appengine extensions', function() {
         var ae = new appengine.AppEngine();
-        ae.validateRequest_({}, function(err) {
-          assert.equal(err.constructor, Error);
-          assert.strictEqual(err.message, 'invalid request object: missing appengine extensions');
-          done();
-        });
+        var maybeError= ae.validateRequest_({});
+        assert.equal(maybeError.constructor, Error);
+        assert.strictEqual(maybeError.message, 'invalid request object: missing appengine extensions');
       });
     });
 
@@ -589,6 +600,15 @@ describe('appengine', function() {
         var result = ae.translateRpcError_(error);
         assert.equal(result.constructor, Error);
         assert.strictEqual(result.message, 'rpc error: 1 test');
+      });
+
+      it('handles a missing detail field', function() {
+        var ae = new appengine.AppEngine();
+        var error = new apphosting.ext.remote_api.RpcError();
+        error.setCode(1);
+        var result = ae.translateRpcError_(error);
+        assert.equal(result.constructor, Error);
+        assert.strictEqual(result.message, 'rpc error: 1');
       });
     });
 
@@ -833,6 +853,33 @@ describe('appengine', function() {
         });
       });
 
+      it('handles a missing chosen task name', function(done) {
+        var ae = new appengine.AppEngine();
+        ae.callApi_ = function(serviceName, methodName, req, proto, callback) {
+          assert.strictEqual(serviceName, 'taskqueue');
+          assert.strictEqual(methodName, 'Add');
+          assert.strictEqual(proto.getUrl(), 'url');
+          assert.strictEqual(proto.getQueueName(), 'default');
+          assert.strictEqual(proto.getTaskName(), '');
+          assert.strictEqual(proto.getEtaUsec(), '0');
+          assert.strictEqual(proto.getMethod(), apphosting.TaskQueueAddRequest.RequestMethod.POST);
+          var response = new apphosting.ext.remote_api.Response();
+          var taskqueueResponse = new apphosting.TaskQueueAddResponse();
+          response.setResponse(utils.numberArrayToString(serializer.serialize(taskqueueResponse)));
+          callback(null, response);
+        };
+
+        var options = {
+          url: 'url',
+        };
+        var req = {appengine: {apiTicket: 'test123', devappserver: false}};
+        ae.taskQueueAdd_(req, options, function(err, taskName) {
+          assert.ifError(err);
+          assert.strictEqual(taskName, undefined);
+          done();
+        });
+      });
+
       it('handles api errors correctly', function(done) {
         var ae = new appengine.AppEngine();
         var error = new Error('test');
@@ -1002,14 +1049,52 @@ describe('appengine', function() {
         });
       });
 
+      it('caches the module instance returned by the metadata server in production', function(done) {
+        var ae = new appengine.AppEngine();
+        ae.metadataGetAttribute_ = function(req, name, callback) {
+          assert.strictEqual(name, 'instance/attributes/gae_backend_instance');
+          callback(null, '0');
+        };
+        var req = {
+          appengine: {
+            apiTicket: 'test123',
+            devappserver: false,
+            appId: 'example.com:test',
+            moduleName: 'foo',
+            moduleVersion: 'bar'
+          }
+        };
+        ae.systemGetBackgroundRequest_(req, function(err, bgReq) {
+          assert.ifError(err);
+          var expected = goog.cloneObject(req);
+          expected.appengine.apiTicket = 'example_com_test/foo.bar.0';
+          assert.deepEqual(bgReq, expected);
+          assert.strictEqual(ae.cache_.moduleInstance, '0');
+          ae.metadataGetAttribute_ = function() {
+            throw new Error('should not have called metadataGetAttribute_ again');
+          };
+          ae.systemGetBackgroundRequest_(req, function(err, bgReq) {
+            assert.deepEqual(bgReq, expected);
+            done();
+          });
+        });
+      });
+
       it('works correctly in the dev appserver', function(done) {
         var ae = new appengine.AppEngine();
         ae.metadataGetAttribute_ = function(req, name, callback) {
           callback(new Error('metadataGetAttribute_ should not have been invoked'));
         };
-        var req = {appengine: {devRequestId: 'test123', devappserver: true,
-          appId: 'example.com:test', moduleName: 'foo', moduleVersion: 'bar',
-          moduleInstance: '0'}};
+        var req = {
+          appengine: {
+            devRequestId: 'test123',
+            devappserver: true,
+            appId: 'example.com:test',
+            moduleName: 'foo',
+            moduleVersion: 'bar',
+            moduleInstance: '0'
+          }
+        };
         ae.systemGetBackgroundRequest_(req, function(err, bgReq) {
           assert.ifError(err);
           var expected = goog.cloneObject(req);
@@ -1026,8 +1111,15 @@ describe('appengine', function() {
           assert.strictEqual(name, 'instance/attributes/gae_backend_instance');
           callback(error);
         };
-        var req = {appengine: {apiTicket: 'test123', devappserver: false,
-          appId: 'example.com:test', moduleName: 'foo', moduleVersion: 'bar'}};
+        var req = {
+          appengine: {
+            apiTicket: 'test123',
+            devappserver: false,
+            appId: 'example.com:test',
+            moduleName: 'foo',
+            moduleVersion: 'bar'
+          }
+        };
         ae.systemGetBackgroundRequest_(req, function(err) {
           assert.strictEqual(err, error);
           done();
@@ -1036,18 +1128,42 @@ describe('appengine', function() {
 
       it('validates the request object', function(done) {
         var ae = new appengine.AppEngine();
-        var req = {appengine: {devRequestId: 'test123', devappserver: true,
-          appId: 'example.com:test', moduleName: 'foo', moduleVersion: 'bar',
-          moduleInstance: '0'}};
+        var req = {
+          appengine: {
+            devRequestId: 'test123',
+            devappserver: true,
+            appId: 'example.com:test',
+            moduleName: 'foo',
+            moduleVersion: 'bar',
+            moduleInstance: '0'
+          }
+        };
         ae.validateRequest_ = function (request) {
           assert.strictEqual(request, req);
           done();
+          return null;
         };
         ae.systemGetBackgroundRequest_(req, function(err, bgReq) {
           assert.ifError(err);
           var expected = goog.cloneObject(req);
           expected.appengine.devRequestId = 'example_com_test/foo.bar.0';
           assert.deepEqual(bgReq, expected);
+        });
+      });
+
+      it('fails if the request is null', function(done) {
+        var ae = new appengine.AppEngine();
+        ae.systemGetBackgroundRequest_(null, function(err) {
+          assert.ok(!!err);
+          done();
+        });
+      });
+
+      it('fails if the request is undefined', function(done) {
+        var ae = new appengine.AppEngine();
+        ae.systemGetBackgroundRequest_(undefined, function(err) {
+          assert.ok(!!err);
+          done();
         });
       });
     });
@@ -1369,6 +1485,16 @@ describe('appengine', function() {
           assert.strictEqual(req.appengine.task.taskName, 'd');
           done();
         });
+      });
+
+      it('handles a missing next handler', function() {
+        var ae = new appengine.AppEngine();
+        var headers = {
+          'x-appengine-api-ticket': 'a',
+        };
+        var req = {headers: headers};
+        var res = {};
+        ae.middlewareBase_(req, res);
       });
     });
   });
