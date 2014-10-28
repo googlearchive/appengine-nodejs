@@ -1434,6 +1434,23 @@ describe('appengine', function() {
         });
       });
 
+      it('processes user headers when only the user ip is present', function(done) {
+        var ae = new appengine.AppEngine();
+        var headers = {
+          'x-appengine-user-ip': 'b',
+        };
+        var req = {headers: headers};
+        var res = {};
+        ae.middlewareBase_(req, res, function() {
+          assert.ok(!!req.appengine.user);
+          assert.strictEqual(req.appengine.user.ip, 'b');
+          assert.ok(!req.appengine.user.isAdmin);
+          assert.ok(!req.appengine.user.nickname);
+          assert.ok(!req.appengine.user.organization);
+          done();
+        });
+      });
+
       it('processes geo headers', function(done) {
         var ae = new appengine.AppEngine();
         var headers = {
