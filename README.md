@@ -54,10 +54,27 @@ All API functions provided by this library take as their last argument a callbac
 ### Logging
 
 ~~~~
+  appengine.logOneLine(request, message, level, function(err) { ... });
+~~~~
+
+Logs a message (a string) at the specified log level.
+
+Valid log levels are:
+~~~~
+  appengine.LogLevel.DEBUG
+  appengine.LogLevel.INFO
+  appengine.LogLevel.WARNING
+  appengine.LogLevel.ERROR
+  appengine.LogLevel.CRITICAL
+~~~~
+
+For backward compatibility, the same function can be invoked without a log level:
+
+~~~~
   appengine.logOneLine(request, message, function(err) { ... });
 ~~~~
 
-Logs a message (a string).
+Logs a message (a string) at the DEBUG log level.
 
 ### Memcache
 

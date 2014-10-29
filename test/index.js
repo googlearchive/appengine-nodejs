@@ -27,6 +27,7 @@ require('../lib/closure/goog/bootstrap/nodejs.js');
 require('../lib/deps.js');
 
 goog.require('apphosting.base.VoidProto');
+goog.require('goog.object');
 goog.require('net.proto2.contrib.WireSerializer');
 
 describe('appengine', function() {
@@ -612,8 +613,26 @@ describe('appengine', function() {
       });
     });
 
+    describe('LogLevel', function() {
+      it('maps log levels to the correct values', function() {
+        var ae = new appengine.AppEngine();
+        assert.ok(goog.isDefAndNotNull(ae.LogLevel));
+        assert.strictEqual(ae.LogLevel.DEBUG, '0');
+        assert.strictEqual(ae.LogLevel.INFO, '1');
+        assert.strictEqual(ae.LogLevel.WARNING, '2');
+        assert.strictEqual(ae.LogLevel.ERROR, '3');
+        assert.strictEqual(ae.LogLevel.CRITICAL, '4');
+      });
+
+      it('does not contain any extra properties', function() {
+        var ae = new appengine.AppEngine();
+        assert.deepEqual(goog.object.getKeys(ae.LogLevel).sort(),
+          ['CRITICAL', 'DEBUG', 'ERROR', 'INFO', 'WARNING']);
+      });
+    });
+
     describe('logOneLine', function() {
-      it('makes an api call to log a line', function(done) {
+      it('makes an api call to log a line with the default log level', function(done) {
         var ae = new appengine.AppEngine();
         var time = new Date().getTime();
         ae.getCurrentTime_ = function() {
@@ -641,6 +660,34 @@ describe('appengine', function() {
         });
       });
 
+      it('makes an api call to log a line with the specified log level', function(done) {
+        var ae = new appengine.AppEngine();
+        var time = new Date().getTime();
+        ae.getCurrentTime_ = function() {
+          return time;
+        };
+        ae.callApi_ = function(serviceName, methodName, req, proto, callback) {
+          assert.strictEqual(serviceName, 'logservice');
+          assert.strictEqual(methodName, 'Flush');
+          var userAppLogGroup = new apphosting.UserAppLogGroup();
+          serializer.deserializeTo(userAppLogGroup, utils.stringToUint8Array(proto.getLogs()));
+          assert.strictEqual(userAppLogGroup.logLineCount(), 1);
+          var logLine = userAppLogGroup.getLogLine(0);
+          assert.strictEqual(logLine.getTimestampUsec(), (time * 1000).toString());
+          assert.strictEqual(logLine.getLevel(), '3');
+          assert.strictEqual(logLine.getMessage(), 'test');
+          var response = new apphosting.ext.remote_api.Response();
+          var voidResponse = new apphosting.base.VoidProto();
+          response.setResponse(utils.numberArrayToString(serializer.serialize(voidResponse)));
+          callback(null, response);
+        };
+
+        var req = {appengine: {apiTicket: 'test123', devappserver: false}};
+        ae.logOneLine(req, 'test', ae.LogLevel.ERROR, function() {
+          done();
+        });
+      });
+
       it('handles api errors correctly', function(done) {
         var ae = new appengine.AppEngine();
         var error = new Error('test');
@@ -653,6 +700,18 @@ describe('appengine', function() {
           assert.equal(err, error);
           done();
         });
+      });
+
+      it('handles a missing callback', function(done) {
+        var ae = new appengine.AppEngine();
+        var req = {appengine: {apiTicket: 'test123', devappserver: false}};
+        try {
+          ae.logOneLine(req, 'test', 3.0);
+        } catch(err) {
+          assert.equal(err.constructor, Error);
+          assert.strictEqual(err.message, 'incorrect arguments passed to logOneLine');
+          done();
+        }
       });
     });
 
