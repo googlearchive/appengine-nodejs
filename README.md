@@ -68,13 +68,22 @@ Valid log levels are:
   appengine.LogLevel.CRITICAL
 ~~~~
 
-For backward compatibility, the same function can be invoked without a log level:
+The callback is optional.
+
+For example, this code snippet logs at the `INFO` level and ignores any logging errors:
+~~~~
+  appengine.logOneLine(request, 'this is a test', appengine.LogLevel.INFO);
+~~~~
+
+For backward compatibility, the same function can be invoked without a log level, with or without a callback:
 
 ~~~~
   appengine.logOneLine(request, message, function(err) { ... });
+
+  appengine.logOneLine(request, message);
 ~~~~
 
-Logs a message (a string) at the DEBUG log level.
+In this case, it logs the given message at the DEBUG log level.
 
 ### Memcache
 

@@ -704,14 +704,55 @@ describe('appengine', function() {
 
       it('handles a missing callback', function(done) {
         var ae = new appengine.AppEngine();
-        var req = {appengine: {apiTicket: 'test123', devappserver: false}};
-        try {
-          ae.logOneLine(req, 'test', 3.0);
-        } catch(err) {
-          assert.equal(err.constructor, Error);
-          assert.strictEqual(err.message, 'incorrect arguments passed to logOneLine');
+        var time = new Date().getTime();
+        ae.getCurrentTime_ = function() {
+          return time;
+        };
+        ae.callApi_ = function(serviceName, methodName, req, proto, callback) {
+          assert.strictEqual(serviceName, 'logservice');
+          assert.strictEqual(methodName, 'Flush');
+          var userAppLogGroup = new apphosting.UserAppLogGroup();
+          serializer.deserializeTo(userAppLogGroup, utils.stringToUint8Array(proto.getLogs()));
+          assert.strictEqual(userAppLogGroup.logLineCount(), 1);
+          var logLine = userAppLogGroup.getLogLine(0);
+          assert.strictEqual(logLine.getTimestampUsec(), (time * 1000).toString());
+          assert.strictEqual(logLine.getLevel(), '3');
+          assert.strictEqual(logLine.getMessage(), 'test');
+          var response = new apphosting.ext.remote_api.Response();
+          var voidResponse = new apphosting.base.VoidProto();
+          response.setResponse(utils.numberArrayToString(serializer.serialize(voidResponse)));
+          callback(null, response);
           done();
-        }
+        };
+
+        var req = {appengine: {apiTicket: 'test123', devappserver: false}};
+        ae.logOneLine(req, 'test', ae.LogLevel.ERROR);
+      });
+
+      it('handles a missing level and callback', function(done) {
+        var ae = new appengine.AppEngine();
+        var time = new Date().getTime();
+        ae.getCurrentTime_ = function() {
+          return time;
+        };
+        ae.callApi_ = function(serviceName, methodName, req, proto, callback) {
+          assert.strictEqual(serviceName, 'logservice');
+          assert.strictEqual(methodName, 'Flush');
+          var userAppLogGroup = new apphosting.UserAppLogGroup();
+          serializer.deserializeTo(userAppLogGroup, utils.stringToUint8Array(proto.getLogs()));
+          assert.strictEqual(userAppLogGroup.logLineCount(), 1);
+          var logLine = userAppLogGroup.getLogLine(0);
+          assert.strictEqual(logLine.getTimestampUsec(), (time * 1000).toString());
+          assert.strictEqual(logLine.getLevel(), '0');
+          assert.strictEqual(logLine.getMessage(), 'test');
+          var response = new apphosting.ext.remote_api.Response();
+          var voidResponse = new apphosting.base.VoidProto();
+          response.setResponse(utils.numberArrayToString(serializer.serialize(voidResponse)));
+          callback(null, response);
+          done();
+        };
+        var req = {appengine: {apiTicket: 'test123', devappserver: false}};
+        ae.logOneLine(req, 'test');
       });
     });
 
