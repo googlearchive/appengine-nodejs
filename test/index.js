@@ -508,9 +508,14 @@ describe('appengine', function() {
     });
 
     describe('validateRequest_', function() {
-      it('handles valid requests', function() {
+      it('handles valid requests in production', function() {
         var ae = new appengine.AppEngine();
-        assert.ifError(ae.validateRequest_({appengine: {}}));
+        assert.ifError(ae.validateRequest_({appengine: {devappserver: false, apiTicket: 'a'}}));
+      });
+
+      it('handles valid requests in the devappserver', function() {
+        var ae = new appengine.AppEngine();
+        assert.ifError(ae.validateRequest_({appengine: {devappserver: true, devRequestId: 'a'}}));
       });
 
       it('fails if the request object is null', function() {
@@ -532,6 +537,20 @@ describe('appengine', function() {
         var maybeError= ae.validateRequest_({});
         assert.equal(maybeError.constructor, Error);
         assert.strictEqual(maybeError.message, 'invalid request object: missing appengine extensions');
+      });
+
+      it('fails if the request object does not contain an api ticket when running in production', function() {
+        var ae = new appengine.AppEngine();
+        var maybeError= ae.validateRequest_({appengine: {devappserver: false}});
+        assert.equal(maybeError.constructor, Error);
+        assert.strictEqual(maybeError.message, 'invalid request object: missing request id');
+      });
+
+      it('fails if the request object does not contain a request id when running on the devappserver', function() {
+        var ae = new appengine.AppEngine();
+        var maybeError= ae.validateRequest_({appengine: {devappserver: true}});
+        assert.equal(maybeError.constructor, Error);
+        assert.strictEqual(maybeError.message, 'invalid request object: missing request id');
       });
     });
 
