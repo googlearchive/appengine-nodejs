@@ -143,6 +143,66 @@ describe('appengine', function() {
       });
     });
 
+    describe('loggingTimestampNs_', function() {
+      it('returns a string of the expected length', function() {
+        var ae = new appengine.AppEngine();
+        var ts = ae.loggingTimestampNs_();
+        assert.strictEqual(typeof(ts), 'string');
+        assert.strictEqual(ts.length, 19);
+      });
+
+      it('returns a correct timestamp', function() {
+        var ae = new appengine.AppEngine();
+        var time = new Date().getTime();
+        ae.getCurrentTime_ = function() {
+          return time;
+        };
+        var ts = ae.loggingTimestampNs_();
+        // The initial segment is the (mock) current time.
+        assert.strictEqual(ts.substring(0, time.toString().length), time.toString());
+        // After the current time, there are exactly six digits.
+        assert.strictEqual(ts.length - time.toString().length, 6);
+      });
+    });
+
+    describe('loggingStringify_', function() {
+      it('converts a log record to json', function() {
+        var ae = new appengine.AppEngine();
+        var record = {message: 'test',  level: 'debug', timestamp: '123'};
+        var result = ae.loggingStringify_(record);
+        assert.strictEqual(result, '{"timeNanos": 123, "message": "test", "severity": "DEBUG", "thread": 0}');
+        JSON.parse(result);
+      });
+
+      it('converts log levels into the expected severities', function() {
+        var ae = new appengine.AppEngine();
+
+        function check(level, severity) {
+          var record = {message: 'test',  level: level, timestamp: '123'};
+          var result = ae.loggingStringify_(record);
+          assert.strictEqual(result, '{"timeNanos": 123, "message": "test", "severity": "' + severity + '", "thread": 0}');
+          // Check that it's valid JSON.
+          JSON.parse(result);
+        }
+
+        check('silly', 'DEBUG');
+        check('debug', 'DEBUG');
+        check('info', 'INFO');
+        check('warn', 'WARNING');
+        check('error', 'ERROR');
+        // Any other values are mapped to INFO.
+        check('other', 'INFO');
+      });
+
+      it('handles quotes in messages correctly', function() {
+        var ae = new appengine.AppEngine();
+        var record = {message: 'test\'again',  level: 'info', timestamp: '123'};
+        assert.strictEqual(ae.loggingStringify_(record), '{"timeNanos": 123, "message": "test\'again", "severity": "INFO", "thread": 0}');
+        record = {message: 'test"again',  level: 'info', timestamp: '123'};
+        assert.strictEqual(ae.loggingStringify_(record), '{"timeNanos": 123, "message": "test\\\"again", "severity": "INFO", "thread": 0}');
+      });
+    });
+
     describe('sendHttpRequest_', function() {
       it('sends a request and invokes the callback with the response', function(done) {
         tmp.tmpName(function(err, path) {
