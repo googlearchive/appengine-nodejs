@@ -1,6 +1,6 @@
 {
   "name": "appengine",
-  "version": "0.0.2",
+  "version": "0.1.0",
   "description": "Appengine client library for node.js",
   "author": "Google Inc.",
   "contributors": {
@@ -22,6 +22,6 @@
   "scripts": {
     "lint": "jshint lib/*.js test/*.js",
     "test": "mocha --recursive --reporter spec",
-    "cover" : "istanbul cover _mocha -- --reporter spec"
+    "cover": "istanbul cover _mocha -- --reporter spec"
   }
 }
