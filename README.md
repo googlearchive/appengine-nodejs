@@ -53,11 +53,22 @@ All API functions provided by this library take as their last argument a callbac
 
 ### Logging
 
+##### appengine.logOneLine
+
 ~~~~
   appengine.logOneLine(request, message, level, function(err) { ... });
 ~~~~
 
 Logs a message (a string) at the specified log level.
+
+Log records are buffered by default. They are flushed when `request.end()` is called or when the buffer grows too big or after a certain amount of time (currently, after 60 seconds).
+
+Two caveats:
+
+ - log flushes are not asynchronous, so for a flush to happen after 60 seconds your application must regularly call `appengine.logOneLine`
+ - the `request.end()` method is never called on background requests
+
+The `appengine.flushLogs` method can be used to flush the buffered logs at any time.
 
 Valid log levels are:
 ~~~~
@@ -85,13 +96,25 @@ For backward compatibility, the same function can be invoked without a log level
 
 In this case, it logs the given message at the DEBUG log level.
 
+##### appengine.flushLogs
+
+~~~~
+  appengine.flushLogs(request, function(err) { ... });
+~~~~
+
+Flushes any buffered log records.
+
 ### Memcache
+
+##### appengine.memcache.get
 
 ~~~~
   appengine.memcache.get(request, key, function(err, value) { ... });
 ~~~~
 
 Reads from memcache the value (a string) for a given key (also a string).
+
+##### appengine.memcache.set
 
 ~~~~
   appengine.memcache.set(request, key, value, function(err) { ... });
@@ -100,6 +123,8 @@ Reads from memcache the value (a string) for a given key (also a string).
 Writes to memcache a value (a string) for a given key (also a string).
 
 ### Task Queues
+
+##### appengine.taskqueue.add
 
 ~~~~
   appengine.taskqueue.add(request, taskOptions, function(err) { ... });
@@ -117,6 +142,8 @@ Add a task to a queue. `taskOptions` must be an object with the following proper
 
 ### Modules
 
+##### appengine.modules.getHostname
+
 ~~~~
   appengine.modules.getHostname(request, module, version, instance, function(err, hostname) { ... });
 ~~~~
@@ -124,6 +151,8 @@ Add a task to a queue. `taskOptions` must be an object with the following proper
 Returns the hostname (a string) to use to talk to the given module/version/instance (all strings, all required).
 
 ### System
+
+##### appengine.system.getBackgroundRequest
 
 ~~~~
   appengine.system.getBackgroundRequest(request, function(err, backgroundRequest) { ... });
@@ -137,6 +166,8 @@ Application code should not assume any specific properties to be defined on the 
 
 ### Auth
 
+##### appengine.auth.getServiceAccountToken
+
 ~~~~
   appengine.auth.getServiceAccountToken(request, function(err, token) { ... });
 ~~~~
@@ -149,6 +180,8 @@ Returns an OAuth token for the service account for the VM as provided by the met
 
 ### Metadata
 
+##### appengine.metadata.getAttribute
+
 ~~~~
   appengine.metadata.getAttribute(request, name, function(err, value) { ... });
 ~~~~
@@ -158,6 +191,8 @@ For example, to retrieve the `foo` instance attribute, the name to use is `"inst
 
 
 ### Middleware
+
+##### appengine.middleware.base
 
 ~~~~
   appengine.middleware.base(request, response, function() { ... });
