@@ -13,6 +13,9 @@
     "url": "https://github.com/googlecloudplatform/appengine-nodejs.git"
   },
   "license": "Apache 2",
+  "dependencies": {
+    "winston": "^0.8.1"
+  },
   "devDependencies": {
     "istanbul": "^0.3.0",
     "jshint": "^2.5.2",
