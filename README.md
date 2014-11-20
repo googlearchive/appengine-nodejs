@@ -65,7 +65,7 @@ Log records are buffered by default. They are flushed when `request.end()` is ca
 
 Two caveats:
 
- - log flushes are not asynchronous, so for a flush to happen after 60 seconds your application must regularly call `appengine.logOneLine`
+ - log flushes are never asynchronous, so for a flush to happen after 60 seconds your application must regularly call `appengine.logOneLine`
  - the `request.end()` method is never called on background requests
 
 The `appengine.flushLogs` method can be used to flush the buffered logs at any time.
@@ -79,9 +79,9 @@ Valid log levels are:
   appengine.LogLevel.CRITICAL
 ~~~~
 
-The callback is optional.
+The callback is optional. Note that while most calls to `logOneLine` will return immediately, some may result in the buffer being flushed.
 
-For example, this code snippet logs at the `INFO` level and ignores any logging errors:
+The following code snippet logs at the `INFO` level and ignores any logging errors:
 ~~~~
   appengine.logOneLine(request, 'this is a test', appengine.LogLevel.INFO);
 ~~~~
