@@ -392,7 +392,7 @@ describe('appengine', function() {
         var req = {appengine: {apiTicket: 'test123', devappserver: false}};
         var proto = new apphosting.base.VoidProto();
         ae.callApi_('Test', 'test', req, proto, function(err) {
-          assert.equal(err.constructor, Error);
+          assert.strictEqual(err.constructor, Error);
           assert.strictEqual(err.message, 'API error: python exception');
           done();
         });
@@ -411,7 +411,7 @@ describe('appengine', function() {
         var req = {appengine: {apiTicket: 'test123', devappserver: false}};
         var proto = new apphosting.base.VoidProto();
         ae.callApi_('Test', 'test', req, proto, function(err) {
-          assert.equal(err.constructor, Error);
+          assert.strictEqual(err.constructor, Error);
           assert.strictEqual(err.message, 'API error: java exception');
           done();
         });
@@ -426,7 +426,7 @@ describe('appengine', function() {
 
         var req = {appengine: {apiTicket: 'test123', devappserver: false}};
         ae.callApi_('Test', 'test', req, proto, function(err) {
-          assert.equal(err.constructor, Error);
+          assert.strictEqual(err.constructor, Error);
           assert.strictEqual(err.message, 'API error: test');
           done();
         });
@@ -442,7 +442,7 @@ describe('appengine', function() {
 
         var req = {appengine: {apiTicket: 'test123', devappserver: false}};
         ae.callApi_('Test', 'test', req, proto, function(err) {
-          assert.equal(err, error);
+          assert.strictEqual(err, error);
           done();
         });
       });
@@ -581,35 +581,35 @@ describe('appengine', function() {
       it('fails if the request object is null', function() {
         var ae = new appengine.AppEngine();
         var maybeError = ae.validateRequest_(null);
-        assert.equal(maybeError.constructor, Error);
+        assert.strictEqual(maybeError.constructor, Error);
         assert.strictEqual(maybeError.message, 'invalid request object: null');
       });
 
       it('fails if the request object is undefined', function() {
         var ae = new appengine.AppEngine();
         var maybeError = ae.validateRequest_(undefined);
-        assert.equal(maybeError.constructor, Error);
+        assert.strictEqual(maybeError.constructor, Error);
         assert.strictEqual(maybeError.message, 'invalid request object: undefined');
       });
 
       it('fails if the request object does not have the appengine extensions', function() {
         var ae = new appengine.AppEngine();
         var maybeError= ae.validateRequest_({});
-        assert.equal(maybeError.constructor, Error);
+        assert.strictEqual(maybeError.constructor, Error);
         assert.strictEqual(maybeError.message, 'invalid request object: missing appengine extensions');
       });
 
       it('fails if the request object does not contain an api ticket when running in production', function() {
         var ae = new appengine.AppEngine();
         var maybeError= ae.validateRequest_({appengine: {devappserver: false}});
-        assert.equal(maybeError.constructor, Error);
+        assert.strictEqual(maybeError.constructor, Error);
         assert.strictEqual(maybeError.message, 'invalid request object: missing request id');
       });
 
       it('fails if the request object does not contain a request id when running on the devappserver', function() {
         var ae = new appengine.AppEngine();
         var maybeError= ae.validateRequest_({appengine: {devappserver: true}});
-        assert.equal(maybeError.constructor, Error);
+        assert.strictEqual(maybeError.constructor, Error);
         assert.strictEqual(maybeError.message, 'invalid request object: missing request id');
       });
     });
@@ -666,7 +666,7 @@ describe('appengine', function() {
         error.setCode(1);
         error.setDetail('test');
         var result = ae.translateApplicationError_(error);
-        assert.equal(result.constructor, Error);
+        assert.strictEqual(result.constructor, Error);
         assert.strictEqual(result.message, 'application error: 1 test');
       });
     });
@@ -678,7 +678,7 @@ describe('appengine', function() {
         error.setCode(1);
         error.setDetail('test');
         var result = ae.translateRpcError_(error);
-        assert.equal(result.constructor, Error);
+        assert.strictEqual(result.constructor, Error);
         assert.strictEqual(result.message, 'rpc error: 1 test');
       });
 
@@ -687,7 +687,7 @@ describe('appengine', function() {
         var error = new apphosting.ext.remote_api.RpcError();
         error.setCode(1);
         var result = ae.translateRpcError_(error);
-        assert.equal(result.constructor, Error);
+        assert.strictEqual(result.constructor, Error);
         assert.strictEqual(result.message, 'rpc error: 1');
       });
     });
@@ -710,128 +710,370 @@ describe('appengine', function() {
       });
     });
 
+    describe('newLogBuffer_', function() {
+      describe('LogBuffer', function() {
+        it('initializes the instance as expected', function() {
+          var ae = new appengine.AppEngine();
+          var logBuffer = ae.newLogBuffer_();
+          assert.strictEqual(logBuffer.appengine_, ae);
+          assert.deepEqual(logBuffer.buffer_, []);
+          assert.strictEqual(logBuffer.size_, 0);
+          assert.strictEqual(logBuffer.lastTimestamp_, -1);
+        });
+      });
+
+      describe('logOneLine_', function() {
+        it('buffers individual lines', function(done) {
+          var ae = new appengine.AppEngine();
+          var logBuffer = ae.newLogBuffer_();
+          assert.strictEqual(logBuffer.buffer_.length, 0);
+          assert.strictEqual(logBuffer.size_, 0);
+          var req = {appengine: {apiTicket: 'test123', devappserver: false}};
+          logBuffer.logOneLine_(req, ae.LogLevel.INFO, 'test', function(err) {
+            assert.ifError(err);
+            assert.strictEqual(logBuffer.buffer_.length, 1);
+            assert.strictEqual(logBuffer.size_, 4);
+            logBuffer.logOneLine_(req, ae.LogLevel.INFO, 'moreandmore', function(err) {
+              assert.ifError(err);
+              assert.strictEqual(logBuffer.buffer_.length, 2);
+              assert.strictEqual(logBuffer.size_, 15);
+              done();
+            });
+          });
+        });
+
+        it('flushes when the buffer becomes too large', function(done) {
+          var ae = new appengine.AppEngine();
+          ae.logSizeThreshold_ = 10;
+          var logBuffer = ae.newLogBuffer_();
+          var flushCalled = false;
+          logBuffer.flush_ = function(req, callback) {
+            assert.strictEqual(logBuffer.buffer_.length, 3);
+            flushCalled = true;
+            callback(null);
+          };
+          var req = {appengine: {apiTicket: 'test123', devappserver: false}};
+          logBuffer.logOneLine_(req, ae.LogLevel.INFO, 'test', function(err) {
+            assert.ifError(err);
+            logBuffer.logOneLine_(req, ae.LogLevel.INFO, 'more', function(err) {
+              assert.ifError(err);
+              logBuffer.logOneLine_(req, ae.LogLevel.INFO, 'last', function(err) {
+                assert.ifError(err);
+                if (flushCalled) {
+                  done();
+                }
+              });
+            });
+          });
+        });
+
+        it('flushes when enough time has passed', function(done) {
+          var ae = new appengine.AppEngine();
+          ae.logMaxTimestampDeltaMillis_ = 1000;
+          var time = new Date().getTime();
+          ae.getCurrentTime_ = function() {
+            var result = time;
+            time += 600;
+            return result;
+          };
+          var flushApiCalled = false;
+          ae.callApi_ = function(serviceName, methodName, req, proto, callback) {
+            assert.strictEqual(serviceName, 'logservice');
+            assert.strictEqual(methodName, 'Flush');
+            flushApiCalled = true;
+            callback(null);
+          };
+          var logBuffer = ae.newLogBuffer_();
+          var req = {appengine: {apiTicket: 'test123', devappserver: false}};
+          logBuffer.logOneLine_(req, ae.LogLevel.INFO, 'test', function(err) {
+            assert.ifError(err);
+            logBuffer.logOneLine_(req, ae.LogLevel.INFO, 'more', function(err) {
+              assert.ifError(err);
+              assert.strictEqual(logBuffer.buffer_.length, 2);
+              logBuffer.logOneLine_(req, ae.LogLevel.INFO, 'flush', function(err) {
+                assert.ifError(err);
+                assert.strictEqual(logBuffer.buffer_.length, 0);
+                assert.strictEqual(logBuffer.lastTimestamp_, time - 600);
+                logBuffer.logOneLine_(req, ae.LogLevel.INFO, 'last', function(err) {
+                  assert.ifError(err);
+                  if (flushApiCalled) {
+                    assert.strictEqual(logBuffer.buffer_.length, 1);
+                    done();
+                  }
+                });
+              });
+            });
+          });
+        });
+      });
+
+      describe('flush_', function() {
+        it('works as expected when the buffer is non-empty', function(done) {
+          var ae = new appengine.AppEngine();
+          var firstTimestamp = new Date().getTime();
+          var time = firstTimestamp;
+          ae.getCurrentTime_ = function() {
+            var result = time;
+            time += 1;
+            return result;
+          };
+          var flushApiCalled = false;
+          ae.callApi_ = function(serviceName, methodName, req, proto, callback) {
+            assert.strictEqual(serviceName, 'logservice');
+            assert.strictEqual(methodName, 'Flush');
+            flushApiCalled = true;
+            var userAppLogGroup = new apphosting.UserAppLogGroup();
+            serializer.deserializeTo(userAppLogGroup, utils.stringToUint8Array(proto.getLogs()));
+            assert.strictEqual(userAppLogGroup.logLineCount(), 2);
+            var logLine = userAppLogGroup.getLogLine(0);
+            assert.strictEqual(logLine.getTimestampUsec(), (firstTimestamp * 1000).toString());
+            assert.strictEqual(logLine.getLevel(), '1');
+            assert.strictEqual(logLine.getMessage(), 'test');
+            logLine = userAppLogGroup.getLogLine(1);
+            assert.strictEqual(logLine.getTimestampUsec(), ((firstTimestamp + 1)* 1000).toString());
+            assert.strictEqual(logLine.getLevel(), '3');
+            assert.strictEqual(logLine.getMessage(), 'flush');
+            var response = new apphosting.ext.remote_api.Response();
+            var voidResponse = new apphosting.base.VoidProto();
+            response.setResponse(utils.numberArrayToString(serializer.serialize(voidResponse)));
+            callback(null, response);
+          };
+          var logBuffer = ae.newLogBuffer_();
+          var req = {appengine: {apiTicket: 'test123', devappserver: false}};
+          logBuffer.logOneLine_(req, ae.LogLevel.INFO, 'test', function(err) {
+            assert.ifError(err);
+            assert.strictEqual(logBuffer.buffer_.length, 1);
+            assert.strictEqual(logBuffer.lastTimestamp_, firstTimestamp);
+            logBuffer.logOneLine_(req, ae.LogLevel.ERROR, 'flush', function(err) {
+              assert.ifError(err);
+              logBuffer.flush_(req, function(err) {
+                assert.ifError(err);
+                if (flushApiCalled) {
+                  assert.strictEqual(logBuffer.buffer_.length, 0);
+                  assert.strictEqual(logBuffer.size_, 0);
+                  assert.strictEqual(logBuffer.lastTimestamp_, firstTimestamp + 2);
+                  done();
+                }
+              });
+            });
+          });
+        });
+
+        it('works as expected when the buffer is empty', function(done) {
+          var ae = new appengine.AppEngine();
+          var firstTimestamp = new Date().getTime();
+          var time = firstTimestamp;
+          ae.getCurrentTime_ = function() {
+            var result = time;
+            time += 1;
+            return result;
+          };
+          var req = {appengine: {apiTicket: 'test123', devappserver: false}};
+          ae.callApi_ = function(serviceName, methodName, request) {
+            assert.strictEqual(req, request);
+            assert.strictEqual(serviceName, 'logservice');
+            assert.strictEqual(methodName, 'Flush');
+            ae.fail('should not have called the flush api');
+          };
+          var logBuffer = ae.newLogBuffer_();
+          logBuffer.flush_(req, function(err) {
+            assert.ifError(err);
+            assert.strictEqual(logBuffer.buffer_.length, 0);
+            assert.strictEqual(logBuffer.size_, 0);
+            assert.strictEqual(logBuffer.lastTimestamp_, firstTimestamp);
+            logBuffer.flush_(req, function(err) {
+              assert.ifError(err);
+              assert.strictEqual(logBuffer.buffer_.length, 0);
+              assert.strictEqual(logBuffer.size_, 0);
+              assert.strictEqual(logBuffer.lastTimestamp_, firstTimestamp + 1);
+              done();
+            });
+          });
+        });
+
+        it('handles api failures', function(done) {
+          var ae = new appengine.AppEngine();
+          var firstTimestamp = new Date().getTime();
+          var time = firstTimestamp;
+          ae.getCurrentTime_ = function() {
+            var result = time;
+            time += 1;
+            return result;
+          };
+          var error = new Error('test');
+          ae.callApi_ = function(serviceName, methodName, req, proto, callback) {
+            assert.strictEqual(serviceName, 'logservice');
+            assert.strictEqual(methodName, 'Flush');
+            callback(error);
+          };
+          var logBuffer = ae.newLogBuffer_();
+          var req = {appengine: {apiTicket: 'test123', devappserver: false}};
+          logBuffer.logOneLine_(req, ae.LogLevel.INFO, 'test', function(err) {
+            assert.ifError(err);
+            assert.strictEqual(logBuffer.buffer_.length, 1);
+            logBuffer.logOneLine_(req, ae.LogLevel.INFO, 'flush', function(err) {
+              assert.ifError(err);
+              assert.strictEqual(logBuffer.lastTimestamp_, firstTimestamp);
+              logBuffer.flush_(req, function(err) {
+                assert.strictEqual(err, error);
+                // An API failure still results in the buffer being emptied.
+                assert.strictEqual(logBuffer.buffer_.length, 0);
+                assert.strictEqual(logBuffer.lastTimestamp_, firstTimestamp + 2);
+                done();
+              });
+            });
+          });
+        });
+      });
+    });
+
     describe('logOneLine', function() {
-      it('makes an api call to log a line with the default log level', function(done) {
+      it('logs a line at the default log level', function(done) {
         var ae = new appengine.AppEngine();
-        var time = new Date().getTime();
-        ae.getCurrentTime_ = function() {
-          return time;
-        };
-        ae.callApi_ = function(serviceName, methodName, req, proto, callback) {
-          assert.strictEqual(serviceName, 'logservice');
-          assert.strictEqual(methodName, 'Flush');
-          var userAppLogGroup = new apphosting.UserAppLogGroup();
-          serializer.deserializeTo(userAppLogGroup, utils.stringToUint8Array(proto.getLogs()));
-          assert.strictEqual(userAppLogGroup.logLineCount(), 1);
-          var logLine = userAppLogGroup.getLogLine(0);
-          assert.strictEqual(logLine.getTimestampUsec(), (time * 1000).toString());
-          assert.strictEqual(logLine.getLevel(), '0');
-          assert.strictEqual(logLine.getMessage(), 'test');
-          var response = new apphosting.ext.remote_api.Response();
-          var voidResponse = new apphosting.base.VoidProto();
-          response.setResponse(utils.numberArrayToString(serializer.serialize(voidResponse)));
-          callback(null, response);
-        };
-
         var req = {appengine: {apiTicket: 'test123', devappserver: false}};
-        ae.logOneLine(req, 'test', function() {
-          done();
-        });
-      });
-
-      it('makes an api call to log a line with the specified log level', function(done) {
-        var ae = new appengine.AppEngine();
-        var time = new Date().getTime();
-        ae.getCurrentTime_ = function() {
-          return time;
+        var fakeLogBuffer = {
+          logOneLine_: function(request, logLevel, message, callback) {
+            assert.strictEqual(request, req);
+            assert.strictEqual(logLevel, ae.LogLevel.DEBUG);
+            assert.strictEqual(message, 'test');
+            callback(null);
+            done();
+          }
         };
-        ae.callApi_ = function(serviceName, methodName, req, proto, callback) {
-          assert.strictEqual(serviceName, 'logservice');
-          assert.strictEqual(methodName, 'Flush');
-          var userAppLogGroup = new apphosting.UserAppLogGroup();
-          serializer.deserializeTo(userAppLogGroup, utils.stringToUint8Array(proto.getLogs()));
-          assert.strictEqual(userAppLogGroup.logLineCount(), 1);
-          var logLine = userAppLogGroup.getLogLine(0);
-          assert.strictEqual(logLine.getTimestampUsec(), (time * 1000).toString());
-          assert.strictEqual(logLine.getLevel(), '3');
-          assert.strictEqual(logLine.getMessage(), 'test');
-          var response = new apphosting.ext.remote_api.Response();
-          var voidResponse = new apphosting.base.VoidProto();
-          response.setResponse(utils.numberArrayToString(serializer.serialize(voidResponse)));
-          callback(null, response);
+        req.appengine.logBuffer_ = fakeLogBuffer;
+        ae.newLogBuffer_ = function() {
+          return fakeLogBuffer;
         };
-
-        var req = {appengine: {apiTicket: 'test123', devappserver: false}};
-        ae.logOneLine(req, 'test', ae.LogLevel.ERROR, function() {
-          done();
-        });
-      });
-
-      it('handles api errors correctly', function(done) {
-        var ae = new appengine.AppEngine();
-        var error = new Error('test');
-        ae.callApi_ = function(serviceName, methodName, req, proto, callback) {
-          callback(error);
-        };
-
-        var req = {appengine: {apiTicket: 'test123', devappserver: false}};
         ae.logOneLine(req, 'test', function(err) {
-          assert.equal(err, error);
+          assert.ifError(err);
+        });
+      });
+
+      it('logs a line at the specified log level', function(done) {
+        var ae = new appengine.AppEngine();
+        var req = {appengine: {apiTicket: 'test123', devappserver: false}};
+        var fakeLogBuffer = {
+          logOneLine_: function(request, logLevel, message, callback) {
+            assert.strictEqual(request, req);
+            assert.strictEqual(logLevel, ae.LogLevel.ERROR);
+            assert.strictEqual(message, 'test');
+            callback(null);
+            done();
+          }
+        };
+        req.appengine.logBuffer_ = fakeLogBuffer;
+        ae.newLogBuffer_ = function() {
+          return fakeLogBuffer;
+        };
+        ae.logOneLine(req, 'test', ae.LogLevel.ERROR, function(err) {
+          assert.ifError(err);
+        });
+      });
+
+      it('handles errors correctly', function(done) {
+        var ae = new appengine.AppEngine();
+        var req = {appengine: {apiTicket: 'test123', devappserver: false}};
+        var error = new Error('some error');
+        var fakeLogBuffer = {
+          logOneLine_: function(request, logLevel, message, callback) {
+            assert.strictEqual(request, req);
+            assert.strictEqual(logLevel, ae.LogLevel.DEBUG);
+            assert.strictEqual(message, 'test');
+            callback(error);
+          }
+        };
+        req.appengine.logBuffer_ = fakeLogBuffer;
+        ae.newLogBuffer_ = function() {
+          return fakeLogBuffer;
+        };
+        ae.logOneLine(req, 'test', function(err) {
+          assert.strictEqual(err, error);
           done();
         });
       });
 
       it('handles a missing callback', function(done) {
         var ae = new appengine.AppEngine();
-        var time = new Date().getTime();
-        ae.getCurrentTime_ = function() {
-          return time;
-        };
-        ae.callApi_ = function(serviceName, methodName, req, proto, callback) {
-          assert.strictEqual(serviceName, 'logservice');
-          assert.strictEqual(methodName, 'Flush');
-          var userAppLogGroup = new apphosting.UserAppLogGroup();
-          serializer.deserializeTo(userAppLogGroup, utils.stringToUint8Array(proto.getLogs()));
-          assert.strictEqual(userAppLogGroup.logLineCount(), 1);
-          var logLine = userAppLogGroup.getLogLine(0);
-          assert.strictEqual(logLine.getTimestampUsec(), (time * 1000).toString());
-          assert.strictEqual(logLine.getLevel(), '3');
-          assert.strictEqual(logLine.getMessage(), 'test');
-          var response = new apphosting.ext.remote_api.Response();
-          var voidResponse = new apphosting.base.VoidProto();
-          response.setResponse(utils.numberArrayToString(serializer.serialize(voidResponse)));
-          callback(null, response);
-          done();
-        };
-
         var req = {appengine: {apiTicket: 'test123', devappserver: false}};
+        var fakeLogBuffer = {
+          logOneLine_: function(request, logLevel, message, callback) {
+            assert.strictEqual(request, req);
+            assert.strictEqual(logLevel, ae.LogLevel.ERROR);
+            assert.strictEqual(message, 'test');
+            callback(null);
+            done();
+          }
+        };
+        req.appengine.logBuffer_ = fakeLogBuffer;
+        ae.newLogBuffer_ = function() {
+          return fakeLogBuffer;
+        };
         ae.logOneLine(req, 'test', ae.LogLevel.ERROR);
       });
 
       it('handles a missing level and callback', function(done) {
         var ae = new appengine.AppEngine();
-        var time = new Date().getTime();
-        ae.getCurrentTime_ = function() {
-          return time;
-        };
-        ae.callApi_ = function(serviceName, methodName, req, proto, callback) {
-          assert.strictEqual(serviceName, 'logservice');
-          assert.strictEqual(methodName, 'Flush');
-          var userAppLogGroup = new apphosting.UserAppLogGroup();
-          serializer.deserializeTo(userAppLogGroup, utils.stringToUint8Array(proto.getLogs()));
-          assert.strictEqual(userAppLogGroup.logLineCount(), 1);
-          var logLine = userAppLogGroup.getLogLine(0);
-          assert.strictEqual(logLine.getTimestampUsec(), (time * 1000).toString());
-          assert.strictEqual(logLine.getLevel(), '0');
-          assert.strictEqual(logLine.getMessage(), 'test');
-          var response = new apphosting.ext.remote_api.Response();
-          var voidResponse = new apphosting.base.VoidProto();
-          response.setResponse(utils.numberArrayToString(serializer.serialize(voidResponse)));
-          callback(null, response);
-          done();
-        };
         var req = {appengine: {apiTicket: 'test123', devappserver: false}};
+        var fakeLogBuffer = {
+          logOneLine_: function(request, logLevel, message, callback) {
+            assert.strictEqual(request, req);
+            assert.strictEqual(logLevel, ae.LogLevel.DEBUG);
+            assert.strictEqual(message, 'test');
+            callback(null);
+            done();
+          }
+        };
+        req.appengine.logBuffer_ = fakeLogBuffer;
+        ae.newLogBuffer_ = function() {
+          return fakeLogBuffer;
+        };
         ae.logOneLine(req, 'test');
+      });
+
+      it('handles invalid request objects', function(done) {
+        var ae = new appengine.AppEngine();
+        var req = {};
+        var error = new Error('invalid');
+        ae.validateRequest_ = function(request) {
+          assert.strictEqual(request, req);
+          return error;
+        };
+        ae.logOneLine(req, 'test', function(err) {
+          assert.strictEqual(err, error);
+          done();
+        });
+      });
+    });
+
+    describe('flushLogs', function() {
+      it('flushes the logs', function(done) {
+        var ae = new appengine.AppEngine();
+        var req = {appengine: {apiTicket: 'test123', devappserver: false}};
+        var fakeLogBuffer = {
+          flush_: function(request, callback) {
+            assert.strictEqual(request, req);
+            callback(null);
+            done();
+          }
+        };
+        req.appengine.logBuffer_ = fakeLogBuffer;
+        ae.flushLogs(req, function(err) {
+          assert.ifError(err);
+        });
+      });
+
+      it('handles invalid request objects', function(done) {
+        var ae = new appengine.AppEngine();
+        var req = {};
+        var error = new Error('invalid');
+        ae.validateRequest_ = function(request) {
+          assert.strictEqual(request, req);
+          return error;
+        };
+        ae.flushLogs(req, function(err) {
+          assert.strictEqual(err, error);
+          done();
+        });
       });
     });
 
@@ -891,7 +1133,7 @@ describe('appengine', function() {
 
         var req = {appengine: {apiTicket: 'test123', devappserver: false}};
         ae.memcacheGet_(req, 'key', function(err) {
-          assert.equal(err, error);
+          assert.strictEqual(err, error);
           done();
         });
       });
@@ -943,7 +1185,7 @@ describe('appengine', function() {
 
         var req = {appengine: {apiTicket: 'test123', devappserver: false}};
         ae.memcacheSet_(req, 'key', 'value', function(err) {
-          assert.equal(err, error);
+          assert.strictEqual(err, error);
           done();
         });
       });
@@ -1077,7 +1319,7 @@ describe('appengine', function() {
         };
         var req = {appengine: {apiTicket: 'test123', devappserver: false}};
         ae.taskQueueAdd_(req, options, function(err) {
-          assert.equal(err, error);
+          assert.strictEqual(err, error);
           done();
         });
       });
@@ -1139,7 +1381,7 @@ describe('appengine', function() {
 
         var req = {appengine: {apiTicket: 'test123', devappserver: false}};
         ae.modulesGetHostname_(req, 'module', 'version', 'instance', function(err) {
-          assert.equal(err, error);
+          assert.strictEqual(err, error);
           done();
         });
       });
@@ -1190,7 +1432,7 @@ describe('appengine', function() {
 
         var req = {appengine: {apiTicket: 'test123', devappserver: false}};
         ae.systemStartBackgroundRequest_(req, function(err) {
-          assert.equal(err, error);
+          assert.strictEqual(err, error);
           done();
         });
       });
@@ -1217,12 +1459,22 @@ describe('appengine', function() {
           assert.strictEqual(name, 'instance/attributes/gae_backend_instance');
           callback(null, '0');
         };
-        var req = {appengine: {apiTicket: 'test123', devappserver: false,
-          appId: 'example.com:test', moduleName: 'foo', moduleVersion: 'bar'}};
+        var req = {
+          appengine: {
+            apiTicket: 'test123',
+            devappserver: false,
+            appId: 'example.com:test',
+            moduleName: 'foo',
+            moduleVersion: 'bar',
+            moduleInstance: '0'
+          }
+        };
         ae.systemGetBackgroundRequest_(req, function(err, bgReq) {
           assert.ifError(err);
           var expected = goog.cloneObject(req);
           expected.appengine.apiTicket = 'example_com_test/foo.bar.0';
+          assert.strictEqual(bgReq.appengine.logBuffer_.constructor, ae.newLogBuffer_().constructor);
+          delete bgReq.appengine.logBuffer_;
           assert.deepEqual(bgReq, expected);
           done();
         });
@@ -1245,14 +1497,18 @@ describe('appengine', function() {
         };
         ae.systemGetBackgroundRequest_(req, function(err, bgReq) {
           assert.ifError(err);
+          assert.strictEqual(bgReq.appengine.moduleInstance, '0');
           var expected = goog.cloneObject(req);
           expected.appengine.apiTicket = 'example_com_test/foo.bar.0';
-          assert.deepEqual(bgReq, expected);
+          expected.appengine.moduleInstance = '0';
+          delete expected.appengine.logBuffer_;
           assert.strictEqual(ae.cache_.moduleInstance, '0');
           ae.metadataGetAttribute_ = function() {
             throw new Error('should not have called metadataGetAttribute_ again');
           };
           ae.systemGetBackgroundRequest_(req, function(err, bgReq) {
+            assert.strictEqual(bgReq.appengine.logBuffer_.constructor, ae.newLogBuffer_().constructor);
+            delete bgReq.appengine.logBuffer_;
             assert.deepEqual(bgReq, expected);
             done();
           });
@@ -1278,6 +1534,8 @@ describe('appengine', function() {
           assert.ifError(err);
           var expected = goog.cloneObject(req);
           expected.appengine.devRequestId = 'example_com_test/foo.bar.0';
+          assert.strictEqual(bgReq.appengine.logBuffer_.constructor, ae.newLogBuffer_().constructor);
+          delete bgReq.appengine.logBuffer_;
           assert.deepEqual(bgReq, expected);
           done();
         });
@@ -1326,6 +1584,8 @@ describe('appengine', function() {
           assert.ifError(err);
           var expected = goog.cloneObject(req);
           expected.appengine.devRequestId = 'example_com_test/foo.bar.0';
+          assert.strictEqual(bgReq.appengine.logBuffer_.constructor, ae.newLogBuffer_().constructor);
+          delete bgReq.appengine.logBuffer_;
           assert.deepEqual(bgReq, expected);
         });
       });
@@ -1385,7 +1645,7 @@ describe('appengine', function() {
         var req = {appengine: {apiTicket: 'test123', devappserver: false}};
         ae.authGetServiceAccountToken_(req, function(err, token) {
           assert.ok(!!err);
-          assert.equal(err.constructor, Error);
+          assert.strictEqual(err.constructor, Error);
           assert.strictEqual(token, undefined);
           done();
         });
@@ -1400,7 +1660,7 @@ describe('appengine', function() {
 
         var req = {appengine: {apiTicket: 'test123', devappserver: false}};
         ae.authGetServiceAccountToken_(req, function(err, token) {
-          assert.equal(err, error);
+          assert.strictEqual(err, error);
           assert.strictEqual(token, undefined);
           done();
         });
@@ -1463,7 +1723,7 @@ describe('appengine', function() {
         var req = {appengine: {apiTicket: 'test123', devappserver: false}};
         ae.metadataGetAttribute_(req, 'name', function(err, value) {
           assert.ok(!!err);
-          assert.equal(err.constructor, Error);
+          assert.strictEqual(err.constructor, Error);
           assert.strictEqual(value, undefined);
           done();
         });
@@ -1478,7 +1738,7 @@ describe('appengine', function() {
 
         var req = {appengine: {apiTicket: 'test123', devappserver: false}};
         ae.metadataGetAttribute_(req, 'name', function(err, value) {
-          assert.equal(err, error);
+          assert.strictEqual(err, error);
           assert.strictEqual(value, undefined);
           done();
         });
@@ -1691,6 +1951,62 @@ describe('appengine', function() {
         var req = {headers: headers};
         var res = {};
         ae.middlewareBase_(req, res);
+      });
+
+      it('creates a log buffer and attaches it to the request', function(done) {
+        var ae = new appengine.AppEngine();
+        var fakeLogBuffer = {flush_: function() {}};
+        ae.newLogBuffer_ = function() {
+          return fakeLogBuffer;
+        };
+        var headers = {
+          'x-appengine-api-ticket': 'a',
+          'x-appengine-auth-domain': 'b',
+          'x-appengine-datacenter': 'c',
+          'x-appengine-default-version-hostname': 'd',
+          'x-appengine-https': 'e',
+          'x-appengine-request-id-hash': 'f',
+          'x-appengine-request-log-id': 'g'
+        };
+        var req = {headers: headers};
+        var res = {};
+        ae.middlewareBase_(req, res, function() {
+          assert.ok(!!req.appengine);
+          assert.strictEqual(req.appengine.logBuffer_, fakeLogBuffer);
+          done();
+        });
+      });
+
+      it('flushes the log buffer after the request completes', function(done) {
+        var ae = new appengine.AppEngine();
+        var realEndCalled = false;
+        var fakeLogBuffer = { flush_: function(req, callback) {
+          callback(null);
+          if (realEndCalled) {
+            done();
+          }
+        }};
+        ae.newLogBuffer_ = function() {
+          return fakeLogBuffer;
+        };
+        var headers = {
+          'x-appengine-api-ticket': 'a',
+          'x-appengine-auth-domain': 'b',
+          'x-appengine-datacenter': 'c',
+          'x-appengine-default-version-hostname': 'd',
+          'x-appengine-https': 'e',
+          'x-appengine-request-id-hash': 'f',
+          'x-appengine-request-log-id': 'g'
+        };
+        var req = {headers: headers};
+        var res = {end: function() {
+          realEndCalled = true;
+        }};
+        ae.middlewareBase_(req, res, function() {
+          assert.ok(!!req.appengine);
+          assert.strictEqual(req.appengine.logBuffer_, fakeLogBuffer);
+        });
+        res.end();
       });
     });
   });
