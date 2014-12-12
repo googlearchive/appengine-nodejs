@@ -44,8 +44,8 @@ An application may use any other Google APIs, such as Google Cloud Storage or Go
 
 ~~~~
   "dependencies": {
-    "googleapis" : "0.7.0"
-    "gcloud" : "git://github.com/GoogleCloudPlatform/gcloud-node.git"
+    "googleapis" : "latest"
+    "gcloud" : "latest"
   }
 ~~~~
 
