@@ -74,7 +74,8 @@ describe('appengine', function() {
           logMaxTimestampDeltaMillis: 60000,
           loggerMaxFiles: 1,
           loggerMaxFileSize: 100 * 1024 * 1024,
-          httpAgentMaxSockets: 100
+          httpAgentMaxSockets: 100,
+          exportPublicFunctions: true
         });
       });
 
@@ -100,11 +101,32 @@ describe('appengine', function() {
         assert.strictEqual(transport.maxFiles, ae.defaultOptions_.loggerMaxFiles);
         assert.strictEqual(transport.maxsize, ae.defaultOptions_.loggerMaxFileSize);
       }
+
+      it('calls exportAll_ iff the exportPublicFunctions option is true', function() {
+        var ae = new appengine.AppEngine({exportPublicFunctions: true});
+        assert.strictEqual(typeof(appengine.memcache.get), 'function');
+        assert.strictEqual(typeof(appengine.memcache.set), 'function');
+        assert.strictEqual(typeof(appengine.taskqueue.add), 'function');
+        assert.strictEqual(typeof(appengine.modules.getHostname), 'function');
+        assert.strictEqual(typeof(appengine.system.getBackgroundRequest), 'function');
+        assert.strictEqual(typeof(appengine.auth.getServiceAccountToken), 'function');
+        assert.strictEqual(typeof(appengine.metadata.getAttribute), 'function');
+        assert.strictEqual(typeof(appengine.middleware.base), 'function');
+
+        ae = new appengine.AppEngine({exportPublicFunctions: false});
+        assert.strictEqual(ae.memcache, undefined);
+        assert.strictEqual(ae.taskqueue, undefined);
+        assert.strictEqual(ae.modules, undefined);
+        assert.strictEqual(ae.system, undefined);
+        assert.strictEqual(ae.auth, undefined);
+        assert.strictEqual(ae.metadata, undefined);
+        assert.strictEqual(ae.middleware, undefined);
+      });
     });
 
     describe('exportAll_', function() {
       it('should export all public functions', function() {
-        var ae = new appengine.AppEngine();
+        var ae = new appengine.AppEngine({exportPublicFunctions: false});
         assert.strictEqual(ae.memcache, undefined);
         assert.strictEqual(ae.taskqueue, undefined);
         assert.strictEqual(ae.modules, undefined);
@@ -124,7 +146,7 @@ describe('appengine', function() {
       });
 
       it('should export the correct function for memcache.get', function(done) {
-        var ae = new appengine.AppEngine();
+        var ae = new appengine.AppEngine({exportPublicFunctions: false});
         ae.memcacheGet_ = function() {
           done();
         };
@@ -133,7 +155,7 @@ describe('appengine', function() {
       });
 
       it('should export the correct function for memcache.set', function(done) {
-        var ae = new appengine.AppEngine();
+        var ae = new appengine.AppEngine({exportPublicFunctions: false});
         ae.memcacheSet_ = function() {
           done();
         };
@@ -142,7 +164,7 @@ describe('appengine', function() {
       });
 
       it('should export the correct function for taskqueue.add', function(done) {
-        var ae = new appengine.AppEngine();
+        var ae = new appengine.AppEngine({exportPublicFunctions: false});
         ae.taskQueueAdd_ = function() {
           done();
         };
@@ -151,7 +173,7 @@ describe('appengine', function() {
       });
 
       it('should export the correct function for modules.getHostname', function(done) {
-        var ae = new appengine.AppEngine();
+        var ae = new appengine.AppEngine({exportPublicFunctions: false});
         ae.modulesGetHostname_ = function() {
           done();
         };
@@ -160,7 +182,7 @@ describe('appengine', function() {
       });
 
       it('should export the correct function for system.getBackgroundRequest', function(done) {
-        var ae = new appengine.AppEngine();
+        var ae = new appengine.AppEngine({exportPublicFunctions: false});
         ae.systemGetBackgroundRequest_ = function() {
           done();
         };
@@ -169,7 +191,7 @@ describe('appengine', function() {
       });
 
       it('should export the correct function for auth.getServiceAccountToken', function(done) {
-        var ae = new appengine.AppEngine();
+        var ae = new appengine.AppEngine({exportPublicFunctions: false});
         ae.authGetServiceAccountToken_ = function() {
           done();
         };
@@ -178,7 +200,7 @@ describe('appengine', function() {
       });
 
       it('should export the correct function for metadata.getAttribute', function(done) {
-        var ae = new appengine.AppEngine();
+        var ae = new appengine.AppEngine({exportPublicFunctions: false});
         ae.metadataGetAttribute_ = function() {
           done();
         };
@@ -187,7 +209,7 @@ describe('appengine', function() {
       });
 
       it('should export the correct function for middleware.base', function(done) {
-        var ae = new appengine.AppEngine();
+        var ae = new appengine.AppEngine({exportPublicFunctions: false});
         ae.middlewareBase_ = function() {
           done();
         };
