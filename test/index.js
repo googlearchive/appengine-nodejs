@@ -75,7 +75,7 @@ describe('appengine', function() {
           loggerMaxFiles: 1,
           loggerMaxFileSize: 100 * 1024 * 1024,
           httpAgentMaxSockets: 100,
-          exportPublicFunctions: true
+          addPublicAPIs: true
         });
       });
 
@@ -100,10 +100,11 @@ describe('appengine', function() {
         assert.ok(!!transport);
         assert.strictEqual(transport.maxFiles, ae.defaultOptions_.loggerMaxFiles);
         assert.strictEqual(transport.maxsize, ae.defaultOptions_.loggerMaxFileSize);
+        assert.strictEqual(ae.options_.addPublicAPIs, true);
       }
 
-      it('calls exportAll_ iff the exportPublicFunctions option is true', function() {
-        var ae = new appengine.AppEngine({exportPublicFunctions: true});
+      it('calls addPublicAPIs_ iff the addPublicAPIs option is true', function() {
+        var ae = new appengine.AppEngine({addPublicAPIs: true});
         assert.strictEqual(typeof(appengine.memcache.get), 'function');
         assert.strictEqual(typeof(appengine.memcache.set), 'function');
         assert.strictEqual(typeof(appengine.taskqueue.add), 'function');
@@ -113,7 +114,7 @@ describe('appengine', function() {
         assert.strictEqual(typeof(appengine.metadata.getAttribute), 'function');
         assert.strictEqual(typeof(appengine.middleware.base), 'function');
 
-        ae = new appengine.AppEngine({exportPublicFunctions: false});
+        ae = new appengine.AppEngine({addPublicAPIs: false});
         assert.strictEqual(ae.memcache, undefined);
         assert.strictEqual(ae.taskqueue, undefined);
         assert.strictEqual(ae.modules, undefined);
@@ -124,9 +125,9 @@ describe('appengine', function() {
       });
     });
 
-    describe('exportAll_', function() {
-      it('should export all public functions', function() {
-        var ae = new appengine.AppEngine({exportPublicFunctions: false});
+    describe('addPublicAPIs_', function() {
+      it('should add all public APIs', function() {
+        var ae = new appengine.AppEngine({addPublicAPIs: false});
         assert.strictEqual(ae.memcache, undefined);
         assert.strictEqual(ae.taskqueue, undefined);
         assert.strictEqual(ae.modules, undefined);
@@ -134,7 +135,7 @@ describe('appengine', function() {
         assert.strictEqual(ae.auth, undefined);
         assert.strictEqual(ae.metadata, undefined);
         assert.strictEqual(ae.middleware, undefined);
-        ae.exportAll_();
+        ae.addPublicAPIs_();
         assert.strictEqual(typeof(appengine.memcache.get), 'function');
         assert.strictEqual(typeof(appengine.memcache.set), 'function');
         assert.strictEqual(typeof(appengine.taskqueue.add), 'function');
@@ -145,75 +146,75 @@ describe('appengine', function() {
         assert.strictEqual(typeof(appengine.middleware.base), 'function');
       });
 
-      it('should export the correct function for memcache.get', function(done) {
-        var ae = new appengine.AppEngine({exportPublicFunctions: false});
+      it('should add the correct function for memcache.get', function(done) {
+        var ae = new appengine.AppEngine({addPublicAPIs: false});
         ae.memcacheGet_ = function() {
           done();
         };
-        ae.exportAll_();
+        ae.addPublicAPIs_();
         ae.memcache.get();
       });
 
-      it('should export the correct function for memcache.set', function(done) {
-        var ae = new appengine.AppEngine({exportPublicFunctions: false});
+      it('should add the correct function for memcache.set', function(done) {
+        var ae = new appengine.AppEngine({addPublicAPIs: false});
         ae.memcacheSet_ = function() {
           done();
         };
-        ae.exportAll_();
+        ae.addPublicAPIs_();
         ae.memcache.set();
       });
 
-      it('should export the correct function for taskqueue.add', function(done) {
-        var ae = new appengine.AppEngine({exportPublicFunctions: false});
+      it('should add the correct function for taskqueue.add', function(done) {
+        var ae = new appengine.AppEngine({addPublicAPIs: false});
         ae.taskQueueAdd_ = function() {
           done();
         };
-        ae.exportAll_();
+        ae.addPublicAPIs_();
         ae.taskqueue.add();
       });
 
-      it('should export the correct function for modules.getHostname', function(done) {
-        var ae = new appengine.AppEngine({exportPublicFunctions: false});
+      it('should add the correct function for modules.getHostname', function(done) {
+        var ae = new appengine.AppEngine({addPublicAPIs: false});
         ae.modulesGetHostname_ = function() {
           done();
         };
-        ae.exportAll_();
+        ae.addPublicAPIs_();
         ae.modules.getHostname();
       });
 
-      it('should export the correct function for system.getBackgroundRequest', function(done) {
-        var ae = new appengine.AppEngine({exportPublicFunctions: false});
+      it('should add the correct function for system.getBackgroundRequest', function(done) {
+        var ae = new appengine.AppEngine({addPublicAPIs: false});
         ae.systemGetBackgroundRequest_ = function() {
           done();
         };
-        ae.exportAll_();
+        ae.addPublicAPIs_();
         ae.system.getBackgroundRequest();
       });
 
-      it('should export the correct function for auth.getServiceAccountToken', function(done) {
-        var ae = new appengine.AppEngine({exportPublicFunctions: false});
+      it('should add the correct function for auth.getServiceAccountToken', function(done) {
+        var ae = new appengine.AppEngine({addPublicAPIs: false});
         ae.authGetServiceAccountToken_ = function() {
           done();
         };
-        ae.exportAll_();
+        ae.addPublicAPIs_();
         ae.auth.getServiceAccountToken();
       });
 
-      it('should export the correct function for metadata.getAttribute', function(done) {
-        var ae = new appengine.AppEngine({exportPublicFunctions: false});
+      it('should add the correct function for metadata.getAttribute', function(done) {
+        var ae = new appengine.AppEngine({addPublicAPIs: false});
         ae.metadataGetAttribute_ = function() {
           done();
         };
-        ae.exportAll_();
+        ae.addPublicAPIs_();
         ae.metadata.getAttribute();
       });
 
-      it('should export the correct function for middleware.base', function(done) {
-        var ae = new appengine.AppEngine({exportPublicFunctions: false});
+      it('should add the correct function for middleware.base', function(done) {
+        var ae = new appengine.AppEngine({addPublicAPIs: false});
         ae.middlewareBase_ = function() {
           done();
         };
-        ae.exportAll_();
+        ae.addPublicAPIs_();
         ae.middleware.base();
       });
     });
