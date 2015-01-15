@@ -1,6 +1,6 @@
 {
   "name": "appengine",
-  "version": "0.2.0",
+  "version": "0.3.0",
   "description": "Appengine client library for node.js",
   "author": "Google Inc.",
   "contributors": {
