@@ -49,9 +49,72 @@ describe('appengine', function() {
   describe('AppEngine', function() {
     var serializer = new net.proto2.contrib.WireSerializer();
 
-    describe('exportAll_', function() {
-      it('should export all public functions', function() {
+    describe('constructor', function() {
+      it('processes the specified options', function() {
+        var ae = new appengine.AppEngine({logSizeThreshold: 100});
+        assert.strictEqual(ae.logSizeThreshold_, 100);
+
+        ae = new appengine.AppEngine({logMaxTimestampDeltaMillis: 200});
+        assert.strictEqual(ae.logMaxTimestampDeltaMillis_, 200);
+
+        ae = new appengine.AppEngine({httpAgentMaxSockets: 300});
+        assert.strictEqual(ae.httpAgent_.maxSockets, 300);
+
+        ae = new appengine.AppEngine({loggerMaxFiles: 400, loggerMaxFileSize: 500});
+        var transport = ae.logger_.transports.file;
+        assert.ok(!!transport);
+        assert.strictEqual(transport.maxFiles, 400);
+        assert.strictEqual(transport.maxsize, 500);
+      });
+
+      it('has the expected default values for all options', function() {
         var ae = new appengine.AppEngine();
+        assert.deepEqual(ae.defaultOptions_, {
+          logSizeThreshold: 1024 * 1024,
+          logMaxTimestampDeltaMillis: 60000,
+          loggerMaxFiles: 1,
+          loggerMaxFileSize: 100 * 1024 * 1024,
+          httpAgentMaxSockets: 100,
+          addPublicAPIs: true
+        });
+      });
+
+      it('defaults any missing options', function() {
+        var ae = new appengine.AppEngine({});
+        verifyAllOptionsHaveDefaultValues(ae);
+      });
+
+      it('uses default options if argument is null or undefined', function() {
+        var ae = new appengine.AppEngine(null);
+        verifyAllOptionsHaveDefaultValues(ae);
+
+        ae = new appengine.AppEngine(undefined);
+        verifyAllOptionsHaveDefaultValues(ae);
+      });
+
+      function verifyAllOptionsHaveDefaultValues(ae) {
+        assert.strictEqual(ae.logSizeThreshold_, ae.defaultOptions_.logSizeThreshold);
+        assert.strictEqual(ae.logMaxTimestampDeltaMillis_, ae.defaultOptions_.logMaxTimestampDeltaMillis);
+        assert.strictEqual(ae.httpAgent_.maxSockets, ae.defaultOptions_.httpAgentMaxSockets);
+        var transport = ae.logger_.transports.file;
+        assert.ok(!!transport);
+        assert.strictEqual(transport.maxFiles, ae.defaultOptions_.loggerMaxFiles);
+        assert.strictEqual(transport.maxsize, ae.defaultOptions_.loggerMaxFileSize);
+        assert.strictEqual(ae.options_.addPublicAPIs, true);
+      }
+
+      it('calls addPublicAPIs_ iff the addPublicAPIs option is true', function() {
+        var ae = new appengine.AppEngine({addPublicAPIs: true});
+        assert.strictEqual(typeof(appengine.memcache.get), 'function');
+        assert.strictEqual(typeof(appengine.memcache.set), 'function');
+        assert.strictEqual(typeof(appengine.taskqueue.add), 'function');
+        assert.strictEqual(typeof(appengine.modules.getHostname), 'function');
+        assert.strictEqual(typeof(appengine.system.getBackgroundRequest), 'function');
+        assert.strictEqual(typeof(appengine.auth.getServiceAccountToken), 'function');
+        assert.strictEqual(typeof(appengine.metadata.getAttribute), 'function');
+        assert.strictEqual(typeof(appengine.middleware.base), 'function');
+
+        ae = new appengine.AppEngine({addPublicAPIs: false});
         assert.strictEqual(ae.memcache, undefined);
         assert.strictEqual(ae.taskqueue, undefined);
         assert.strictEqual(ae.modules, undefined);
@@ -59,7 +122,20 @@ describe('appengine', function() {
         assert.strictEqual(ae.auth, undefined);
         assert.strictEqual(ae.metadata, undefined);
         assert.strictEqual(ae.middleware, undefined);
-        ae.exportAll_();
+      });
+    });
+
+    describe('addPublicAPIs_', function() {
+      it('should add all public APIs', function() {
+        var ae = new appengine.AppEngine({addPublicAPIs: false});
+        assert.strictEqual(ae.memcache, undefined);
+        assert.strictEqual(ae.taskqueue, undefined);
+        assert.strictEqual(ae.modules, undefined);
+        assert.strictEqual(ae.system, undefined);
+        assert.strictEqual(ae.auth, undefined);
+        assert.strictEqual(ae.metadata, undefined);
+        assert.strictEqual(ae.middleware, undefined);
+        ae.addPublicAPIs_();
         assert.strictEqual(typeof(appengine.memcache.get), 'function');
         assert.strictEqual(typeof(appengine.memcache.set), 'function');
         assert.strictEqual(typeof(appengine.taskqueue.add), 'function');
@@ -70,75 +146,75 @@ describe('appengine', function() {
         assert.strictEqual(typeof(appengine.middleware.base), 'function');
       });
 
-      it('should export the correct function for memcache.get', function(done) {
-        var ae = new appengine.AppEngine();
+      it('should add the correct function for memcache.get', function(done) {
+        var ae = new appengine.AppEngine({addPublicAPIs: false});
         ae.memcacheGet_ = function() {
           done();
         };
-        ae.exportAll_();
+        ae.addPublicAPIs_();
         ae.memcache.get();
       });
 
-      it('should export the correct function for memcache.set', function(done) {
-        var ae = new appengine.AppEngine();
+      it('should add the correct function for memcache.set', function(done) {
+        var ae = new appengine.AppEngine({addPublicAPIs: false});
         ae.memcacheSet_ = function() {
           done();
         };
-        ae.exportAll_();
+        ae.addPublicAPIs_();
         ae.memcache.set();
       });
 
-      it('should export the correct function for taskqueue.add', function(done) {
-        var ae = new appengine.AppEngine();
+      it('should add the correct function for taskqueue.add', function(done) {
+        var ae = new appengine.AppEngine({addPublicAPIs: false});
         ae.taskQueueAdd_ = function() {
           done();
         };
-        ae.exportAll_();
+        ae.addPublicAPIs_();
         ae.taskqueue.add();
       });
 
-      it('should export the correct function for modules.getHostname', function(done) {
-        var ae = new appengine.AppEngine();
+      it('should add the correct function for modules.getHostname', function(done) {
+        var ae = new appengine.AppEngine({addPublicAPIs: false});
         ae.modulesGetHostname_ = function() {
           done();
         };
-        ae.exportAll_();
+        ae.addPublicAPIs_();
         ae.modules.getHostname();
       });
 
-      it('should export the correct function for system.getBackgroundRequest', function(done) {
-        var ae = new appengine.AppEngine();
+      it('should add the correct function for system.getBackgroundRequest', function(done) {
+        var ae = new appengine.AppEngine({addPublicAPIs: false});
         ae.systemGetBackgroundRequest_ = function() {
           done();
         };
-        ae.exportAll_();
+        ae.addPublicAPIs_();
         ae.system.getBackgroundRequest();
       });
 
-      it('should export the correct function for auth.getServiceAccountToken', function(done) {
-        var ae = new appengine.AppEngine();
+      it('should add the correct function for auth.getServiceAccountToken', function(done) {
+        var ae = new appengine.AppEngine({addPublicAPIs: false});
         ae.authGetServiceAccountToken_ = function() {
           done();
         };
-        ae.exportAll_();
+        ae.addPublicAPIs_();
         ae.auth.getServiceAccountToken();
       });
 
-      it('should export the correct function for metadata.getAttribute', function(done) {
-        var ae = new appengine.AppEngine();
+      it('should add the correct function for metadata.getAttribute', function(done) {
+        var ae = new appengine.AppEngine({addPublicAPIs: false});
         ae.metadataGetAttribute_ = function() {
           done();
         };
-        ae.exportAll_();
+        ae.addPublicAPIs_();
         ae.metadata.getAttribute();
       });
 
-      it('should export the correct function for middleware.base', function(done) {
-        var ae = new appengine.AppEngine();
+      it('should add the correct function for middleware.base', function(done) {
+        var ae = new appengine.AppEngine({addPublicAPIs: false});
         ae.middlewareBase_ = function() {
           done();
         };
-        ae.exportAll_();
+        ae.addPublicAPIs_();
         ae.middleware.base();
       });
     });
@@ -475,6 +551,21 @@ describe('appengine', function() {
         });
       });
 
+      it('uses getRemoteApiRequestOptions_ to get the request options and passes them to sendHttpRequest_', function(done) {
+        var ae = new appengine.AppEngine();
+        var requestOptions = {};
+        ae.getRemoteApiRequestOptions_ = function() {
+          return requestOptions;
+        };
+        ae.sendHttpRequest_ = function(options) {
+          assert.strictEqual(options, requestOptions);
+          done();
+        };
+        var req = {appengine: {apiTicket: 'test123', devappserver: false}};
+        var proto = new apphosting.base.VoidProto();
+        ae.callApi_('Test', 'test', req, proto, function() {});
+      });
+
       it('fails if the request is null', function(done) {
         var ae = new appengine.AppEngine();
         var proto = new apphosting.base.VoidProto();
@@ -509,6 +600,7 @@ describe('appengine', function() {
           'X-Google-RPC-Service-Endpoint': 'app-engine-apis',
           'X-Google-RPC-Service-Method': '/VMRemoteAPI.CallRemoteAPI'
         });
+        assert.strictEqual(options.agent, ae.httpAgent_);
       });
 
       it('returns the correct options for the devappserver', function() {
@@ -530,6 +622,7 @@ describe('appengine', function() {
           'X-Google-RPC-Service-Endpoint': 'app-engine-apis',
           'X-Google-RPC-Service-Method': '/VMRemoteAPI.CallRemoteAPI'
         });
+        assert.strictEqual(options.agent, ae.httpAgent_);
       });
     });
 
@@ -1615,6 +1708,7 @@ describe('appengine', function() {
           assert.strictEqual(options.path, '/computeMetadata/v1/instance/service-accounts/default/token');
           assert.strictEqual(options.method, 'GET');
           assert.strictEqual(options.headers['Metadata-Flavor'], 'Google');
+          assert.strictEqual(options.agent, ae.httpAgent_);
           assert.strictEqual(body, null);
           var response = {statusCode: 200, headers: {}, body: new Buffer('{ "access_token": "test", "token_type": "Bearer", "expires_in": 600}')};
           callback(null, response);
@@ -1637,6 +1731,7 @@ describe('appengine', function() {
           assert.strictEqual(options.path, '/computeMetadata/v1/instance/service-accounts/default/token');
           assert.strictEqual(options.method, 'GET');
           assert.strictEqual(options.headers['Metadata-Flavor'], 'Google');
+          assert.strictEqual(options.agent, ae.httpAgent_);
           assert.strictEqual(body, null);
           var response = {statusCode: 500, headers: {}, body: new Buffer('500 Internal Server Error')};
           callback(null, response);
@@ -1675,6 +1770,7 @@ describe('appengine', function() {
           assert.strictEqual(options.path, '/computeMetadata/v1/name');
           assert.strictEqual(options.method, 'GET');
           assert.strictEqual(options.headers['Metadata-Flavor'], 'Google');
+          assert.strictEqual(options.agent, ae.httpAgent_);
           assert.strictEqual(body, null);
           var response = {statusCode: 200, headers: {}, body: new Buffer('value')};
           callback(null, response);
@@ -1695,6 +1791,7 @@ describe('appengine', function() {
           assert.strictEqual(options.path, '/computeMetadata/v1/name');
           assert.strictEqual(options.method, 'GET');
           assert.strictEqual(options.headers['Metadata-Flavor'], 'Google');
+          assert.strictEqual(options.agent, ae.httpAgent_);
           assert.strictEqual(body, null);
           var response = {statusCode: 404, headers: {}, body: new Buffer(0)};
           callback(null, response);
@@ -1715,6 +1812,7 @@ describe('appengine', function() {
           assert.strictEqual(options.path, '/computeMetadata/v1/name');
           assert.strictEqual(options.method, 'GET');
           assert.strictEqual(options.headers['Metadata-Flavor'], 'Google');
+          assert.strictEqual(options.agent, ae.httpAgent_);
           assert.strictEqual(body, null);
           var response = {statusCode: 500, headers: {}, body: new Buffer('500 Internal Server Error')};
           callback(null, response);
