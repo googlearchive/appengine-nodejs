@@ -69,7 +69,7 @@ describe('appengine', function() {
 
       it('has the expected default values for all options', function() {
         var ae = new appengine.AppEngine();
-        assert.deepEqual(ae.defaults_, {
+        assert.deepEqual(ae.defaultOptions_, {
           logSizeThreshold: 1024 * 1024,
           logMaxTimestampDeltaMillis: 60000,
           loggerMaxFiles: 1,
@@ -92,13 +92,13 @@ describe('appengine', function() {
       });
 
       function verifyAllOptionsHaveDefaultValues(ae) {
-        assert.strictEqual(ae.logSizeThreshold_, ae.defaults_.logSizeThreshold);
-        assert.strictEqual(ae.logMaxTimestampDeltaMillis_, ae.defaults_.logMaxTimestampDeltaMillis);
-        assert.strictEqual(ae.httpAgent_.maxSockets, ae.defaults_.httpAgentMaxSockets);
+        assert.strictEqual(ae.logSizeThreshold_, ae.defaultOptions_.logSizeThreshold);
+        assert.strictEqual(ae.logMaxTimestampDeltaMillis_, ae.defaultOptions_.logMaxTimestampDeltaMillis);
+        assert.strictEqual(ae.httpAgent_.maxSockets, ae.defaultOptions_.httpAgentMaxSockets);
         var transport = ae.logger_.transports.file;
         assert.ok(!!transport);
-        assert.strictEqual(transport.maxFiles, ae.defaults_.loggerMaxFiles);
-        assert.strictEqual(transport.maxsize, ae.defaults_.loggerMaxFileSize);
+        assert.strictEqual(transport.maxFiles, ae.defaultOptions_.loggerMaxFiles);
+        assert.strictEqual(transport.maxsize, ae.defaultOptions_.loggerMaxFileSize);
       }
     });
 
