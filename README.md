@@ -2,7 +2,7 @@
 
 This project is no longer actively developed or maintained.
 
-To use cloud APIs from Google App Engine in Node.js, use [gcloud-node](https://github.com/GoogleCloudPlatform/gcloud-node).
+To use Google Cloud APIs from Google App Engine in Node.js, use [gcloud-node](https://github.com/GoogleCloudPlatform/gcloud-node).
 
 ---
 
