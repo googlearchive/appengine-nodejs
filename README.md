@@ -1,3 +1,11 @@
+![status: inactive](https://img.shields.io/badge/status-inactive-red.svg)
+
+This project is no longer actively developed or maintained.
+
+To use cloud APIs from Google App Engine in Node.js, use [gcloud-node](https://github.com/GoogleCloudPlatform/gcloud-node).
+
+---
+
 # appengine-nodejs
 
 An experimental set of node.js libraries for interacting with App Engine specific services from within [Google App Engine Managed VMs](https://developers.google.com/appengine/docs/managed-vms/) using Custom Runtimes.
